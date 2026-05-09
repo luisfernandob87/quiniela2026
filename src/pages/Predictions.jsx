@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, setDoc, getDoc, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import MatchCard from '../components/MatchCard';
@@ -14,14 +14,19 @@ export default function Predictions() {
   const { currentUser } = useAuth();
 
   useEffect(() => {
+    if (!currentUser?.clientId) {
+      setLoading(false);
+      return;
+    }
     loadMatches();
-  }, []);
+  }, [currentUser]);
 
   async function loadMatches() {
     try {
-      const q = query(collection(db, 'matches'), orderBy('date'));
+      const q = query(collection(db, 'matches'), where('clientId', '==', currentUser.clientId));
       const snapshot = await getDocs(q);
       const matchesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      matchesData.sort((a, b) => new Date(a.date) - new Date(b.date));
       setMatches(matchesData);
       await loadPredictions(matchesData);
     } catch (error) {
@@ -50,11 +55,28 @@ export default function Predictions() {
   async function handleUpdatePrediction(matchId, prediction) {
     if (!currentUser) return;
     try {
+      const matchRef = doc(db, 'matches', matchId);
+      const matchSnap = await getDoc(matchRef);
+      if (!matchSnap.exists()) return;
+      const match = matchSnap.data();
+
+      if (match.result && match.result.homeScore !== null) {
+        console.warn('Partido ya tiene resultado');
+        return;
+      }
+
+      const matchTime = match.dateTimestamp || new Date(match.date).getTime();
+      if (Date.now() > matchTime) {
+        console.warn('El partido ya comenzó');
+        return;
+      }
+
       const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
       await setDoc(predRef, {
         ...prediction,
         userId: currentUser.uid,
         matchId,
+        clientId: currentUser.clientId,
         updatedAt: new Date().toISOString()
       });
       setPredictions(prev => ({ ...prev, [matchId]: prediction }));
@@ -81,6 +103,13 @@ export default function Predictions() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  function canPredict(match) {
+    if (match.result && match.result.homeScore !== null) return false;
+    const matchTime = match.dateTimestamp || (match.date ? new Date(match.date).getTime() : 0);
+    if (matchTime > 0 && Date.now() > matchTime) return false;
+    return true;
   }
 
   return (
@@ -117,7 +146,7 @@ export default function Predictions() {
               match={match}
               prediction={predictions[match.id]}
               onUpdatePrediction={handleUpdatePrediction}
-              canPredict={!match.result || match.result.homeScore === null}
+              canPredict={canPredict(match)}
               hasPrediction={!!predictions[match.id]}
             />
           ))}

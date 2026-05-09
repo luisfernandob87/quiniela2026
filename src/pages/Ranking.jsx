@@ -1,23 +1,32 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent } from '../components/ui/Card';
-import { Trophy, Medal } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { calculatePoints } from '../utils/scoring';
 
 export default function Ranking() {
+  const { currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentUser?.clientId) {
+      setLoading(false);
+      return;
+    }
     loadRanking();
-  }, []);
+  }, [currentUser]);
 
   async function loadRanking() {
     try {
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const matchesSnap = await getDocs(collection(db, 'matches'));
-      const predictionsSnap = await getDocs(collection(db, 'predictions'));
+      const usersQuery = query(collection(db, 'users'), where('clientId', '==', currentUser.clientId));
+      const usersSnap = await getDocs(usersQuery);
+      const matchesQuery = query(collection(db, 'matches'), where('clientId', '==', currentUser.clientId));
+      const matchesSnap = await getDocs(matchesQuery);
+      const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
+      const predictionsSnap = await getDocs(predictionsQuery);
 
       const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const predictions = predictionsSnap.docs.map(d => d.data());
@@ -36,7 +45,7 @@ export default function Ranking() {
 
       const usersWithPoints = usersData.map(u => ({
         ...u,
-        points: calculatedPoints[u.id] || u.points || 0
+        points: calculatedPoints[u.id] || 0
       }));
 
       usersWithPoints.sort((a, b) => b.points - a.points);
@@ -51,9 +60,9 @@ export default function Ranking() {
   }
 
   function getMedalIcon(rank) {
-    if (rank === 1) return <Medal className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
-    if (rank === 2) return <Medal className="w-5 h-5 text-gray-400 fill-gray-400" />;
-    if (rank === 3) return <Medal className="w-5 h-5 text-amber-600 fill-amber-600" />;
+    if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
+    if (rank === 2) return <Trophy className="w-5 h-5 text-gray-400 fill-gray-400" />;
+    if (rank === 3) return <Trophy className="w-5 h-5 text-amber-600 fill-amber-600" />;
     return null;
   }
 

@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, query, where } from 'firebase/firestore';
 
 export function calculatePoints(prediction, result) {
   if (!prediction || !result) return 0;
@@ -26,12 +26,18 @@ export function calculatePoints(prediction, result) {
   return 0;
 }
 
-export async function recalculateAllPoints(db) {
-  const matchesSnap = await getDocs(collection(db, 'matches'));
+export async function recalculateAllPoints(db, clientId) {
+  const matchesQuery = query(collection(db, 'matches'), where('clientId', '==', clientId));
+  const matchesSnap = await getDocs(matchesQuery);
   const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   
-  const predictionsSnap = await getDocs(collection(db, 'predictions'));
+  const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', clientId));
+  const predictionsSnap = await getDocs(predictionsQuery);
   const predictions = predictionsSnap.docs.map(d => d.data());
+  
+  const usersQuery = query(collection(db, 'users'), where('clientId', '==', clientId));
+  const usersSnap = await getDocs(usersQuery);
+  const clientUsers = usersSnap.docs.map(d => d.id);
   
   const userPoints = {};
   
@@ -47,9 +53,9 @@ export async function recalculateAllPoints(db) {
   }
   
   const batch = writeBatch(db);
-  for (const [uid, points] of Object.entries(userPoints)) {
+  for (const uid of clientUsers) {
     const userRef = doc(db, 'users', uid);
-    batch.update(userRef, { points });
+    batch.update(userRef, { points: userPoints[uid] || 0 });
   }
   
   await batch.commit();

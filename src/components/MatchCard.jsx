@@ -4,8 +4,9 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent } from './ui/Card';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
+import { Label } from './ui/Label';
 import { calculatePoints } from '../utils/scoring';
-import { Star, CheckCircle, Lock } from 'lucide-react';
+import { Star, CheckCircle, Lock, X, Save, Clock } from 'lucide-react';
 
 function getFlagUrl(code, size = 'w40') {
   if (!code) return '';
@@ -16,6 +17,7 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
   const [homeScore, setHomeScore] = useState(prediction?.homeScore || '');
   const [awayScore, setAwayScore] = useState(prediction?.awayScore || '');
   const [saved, setSaved] = useState(!!prediction);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (prediction) {
@@ -26,10 +28,14 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
   }, [prediction]);
 
   function handleSave() {
-    if (homeScore === '' || awayScore === '') return;
+    setShowConfirm(true);
+  }
+
+  function handleConfirmSave() {
+    setShowConfirm(false);
     onUpdatePrediction(match.id, {
-      homeScore: parseInt(homeScore),
-      awayScore: parseInt(awayScore)
+      homeScore: parseInt(homeScore || '0'),
+      awayScore: parseInt(awayScore || '0')
     });
     setSaved(true);
   }
@@ -37,13 +43,22 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
   const hasResult = match.result && match.result.homeScore !== null;
   const points = hasResult && prediction ? calculatePoints(prediction, match.result) : null;
   const isLocked = saved && !hasResult;
+  const matchTime = match.dateTimestamp || (match.date ? new Date(match.date).getTime() : 0);
+  const isExpired = matchTime > 0 && Date.now() > matchTime;
 
   return (
     <Card className="w-full overflow-hidden transition-all hover:shadow-md">
       <CardContent className="p-0">
         <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 py-2 text-white">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-medium uppercase tracking-wide">{match.group}</span>
+            <span className="font-medium uppercase tracking-wide flex items-center gap-2">
+              {match.group}
+              {!hasResult && (
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${isExpired ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-200'}`}>
+                  {isExpired ? 'Cerrado' : 'Abierto'}
+                </span>
+              )}
+            </span>
             <span className="opacity-90">
               {format(new Date(match.date), "d MMM yyyy - HH:mm", { locale: es })}
             </span>
@@ -178,10 +193,23 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
             </div>
           )}
 
+          {!hasResult && !saved && isExpired && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded-lg py-2.5 px-4">
+              <Clock className="w-4 h-4 shrink-0" />
+              <span>Predicciones cerradas — El partido ya comenzó</span>
+            </div>
+          )}
+
           {isLocked && (
             <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg py-2 px-4">
               <Lock className="w-4 h-4" />
               <span>Predicción guardada - Ya no se puede editar</span>
+            </div>
+          )}
+
+          {hasResult && prediction && (
+            <div className="mt-3 text-center text-sm text-muted-foreground">
+              Tu pronóstico: {prediction.homeScore} - {prediction.awayScore}
             </div>
           )}
 
@@ -198,13 +226,73 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                 <span className="text-base">
                   +{points} {points === 1 ? 'punto' : 'puntos'}
                   {points === 3 && ' ¡Resultado exacto!'}
-                  {points === 1 && ' Ganador correcto'}
+                  {points === 1 && match.result.homeScore === match.result.awayScore ? ' Empate correcto' : ''}
+                  {points === 1 && match.result.homeScore !== match.result.awayScore ? ' Ganador correcto' : ''}
                 </span>
               </div>
             </div>
           )}
         </div>
       </CardContent>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="rounded-lg border bg-card text-card-foreground shadow-lg w-full max-w-sm mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-5 pb-2">
+              <h2 className="text-lg font-bold">Confirmar predicción</h2>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="p-1 rounded-full hover:bg-muted transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 pt-3 space-y-5">
+              <div className="flex items-center justify-center gap-4 text-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  <img
+                    src={getFlagUrl(match.homeTeamCode, 'w80')}
+                    alt={match.homeTeam}
+                    className="w-12 h-8 object-cover rounded shadow-sm"
+                  />
+                  <span className="font-semibold text-xs">{match.homeTeam}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-12 h-12 rounded-lg bg-primary/10 text-primary text-2xl font-black flex items-center justify-center">
+                    {homeScore || '0'}
+                  </span>
+                  <span className="text-muted-foreground text-lg font-light">-</span>
+                  <span className="w-12 h-12 rounded-lg bg-primary/10 text-primary text-2xl font-black flex items-center justify-center">
+                    {awayScore || '0'}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <img
+                    src={getFlagUrl(match.awayTeamCode, 'w80')}
+                    alt={match.awayTeam}
+                    className="w-12 h-8 object-cover rounded shadow-sm"
+                  />
+                  <span className="font-semibold text-xs">{match.awayTeam}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowConfirm(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button className="flex-1" onClick={handleConfirmSave}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Confirmar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

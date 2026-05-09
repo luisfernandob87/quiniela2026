@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Label } from '../components/ui/Label';
+import { Select } from '../components/ui/Select';
 import { Trophy } from 'lucide-react';
 
 export default function Login() {
@@ -12,10 +15,27 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clients, setClients] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  async function loadClients() {
+    try {
+      const snapshot = await getDocs(collection(db, 'clients'));
+      setClients(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (error) {
+      console.error('Error cargando clientes:', error);
+    }
+  }
+
+  const hasClients = clients.length > 0;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -28,9 +48,16 @@ export default function Login() {
       } else {
         if (!displayName.trim()) {
           setError('Ingresa tu nombre');
+          setLoading(false);
           return;
         }
-        await signup(email, password, displayName);
+        if (hasClients && !clientId) {
+          setError('Selecciona una quiniela');
+          setLoading(false);
+          return;
+        }
+        const client = clients.find(c => c.id === clientId);
+        await signup(email, password, displayName, clientId || '', client?.name || '');
       }
       navigate('/');
     } catch (err) {
@@ -66,17 +93,34 @@ export default function Login() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Nombre</Label>
-                  <Input
-                    id="displayName"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Tu nombre"
-                    required
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">Nombre</Label>
+                    <Input
+                      id="displayName"
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Tu nombre"
+                      required
+                    />
+                  </div>
+                  {hasClients && (
+                    <div className="space-y-2">
+                      <Label htmlFor="clientId">Quiniela</Label>
+                      <Select
+                        id="clientId"
+                        value={clientId}
+                        onChange={(e) => setClientId(e.target.value)}
+                      >
+                        <option value="">Seleccionar quiniela</option>
+                        {clients.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="space-y-2">

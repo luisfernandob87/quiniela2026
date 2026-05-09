@@ -5,7 +5,7 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const AuthContext = createContext();
@@ -18,19 +18,23 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  function signup(email, password, displayName) {
-    return createUserWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        const user = userCredential.user;
-        await setDoc(doc(db, 'users', user.uid), {
-          email: user.email,
-          displayName,
-          points: 0,
-          isAdmin: false,
-          createdAt: new Date().toISOString()
-        });
-        return user;
-      });
+  async function signup(email, password, displayName, clientId, clientName) {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const isFirstUser = usersSnap.empty;
+    const userData = {
+      email: user.email,
+      displayName,
+      clientId,
+      clientName,
+      points: 0,
+      isAdmin: isFirstUser,
+      createdAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, 'users', user.uid), userData);
+    setCurrentUser({ ...user, ...userData });
+    return user;
   }
 
   function login(email, password) {

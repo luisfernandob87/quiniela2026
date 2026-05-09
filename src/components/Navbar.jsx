@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/Button';
@@ -18,9 +18,12 @@ export default function Navbar() {
   }, [currentUser]);
 
   async function loadLivePoints() {
+    if (!currentUser?.clientId) return;
     try {
-      const matchesSnap = await getDocs(collection(db, 'matches'));
-      const predictionsSnap = await getDocs(collection(db, 'predictions'));
+      const matchesQuery = query(collection(db, 'matches'), where('clientId', '==', currentUser.clientId));
+      const matchesSnap = await getDocs(matchesQuery);
+      const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
+      const predictionsSnap = await getDocs(predictionsQuery);
 
       const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const predictions = predictionsSnap.docs.map(d => d.data());
@@ -75,6 +78,11 @@ export default function Navbar() {
                 <div className="flex items-center gap-2 text-sm">
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">{currentUser.displayName}</span>
+                  {currentUser.clientName && (
+                    <span className="hidden sm:inline text-primary-foreground/70 text-xs">
+                      ({currentUser.clientName})
+                    </span>
+                  )}
                   <span className="bg-primary-foreground/20 px-2 py-1 rounded-full text-xs">
                     {livePoints} pts
                   </span>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -18,9 +18,12 @@ export default function Home() {
   }, [currentUser]);
 
   async function loadLivePoints() {
+    if (!currentUser.clientId) return;
     try {
-      const matchesSnap = await getDocs(collection(db, 'matches'));
-      const predictionsSnap = await getDocs(collection(db, 'predictions'));
+      const matchesQuery = query(collection(db, 'matches'), where('clientId', '==', currentUser.clientId));
+      const matchesSnap = await getDocs(matchesQuery);
+      const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
+      const predictionsSnap = await getDocs(predictionsQuery);
 
       const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const predictions = predictionsSnap.docs.map(d => d.data());
@@ -98,7 +101,7 @@ export default function Home() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">¡Bienvenido, {currentUser.displayName}!</h1>
-        <p className="text-muted-foreground">Mundial FIFA 2026 - Estados Unidos, México y Canadá</p>
+        <p className="text-muted-foreground">{currentUser.clientName || 'Quiniela'}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -143,8 +146,8 @@ export default function Home() {
             <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
               <span className="text-2xl">✓</span>
               <div>
-                <p className="font-medium">1 punto - Ganador correcto</p>
-                <p className="text-sm text-muted-foreground">Aciertas quién gana o si hay empate</p>
+                <p className="font-medium">1 punto - Ganador o empate correcto</p>
+                <p className="text-sm text-muted-foreground">Aciertas quién gana pero no el marcador exacto</p>
               </div>
             </div>
           </div>
