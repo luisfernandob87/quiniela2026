@@ -79,6 +79,9 @@ export const countries = {
   'cd': { name: 'Congo', flag: '🇨🇩' },
   'gn': { name: 'Guinea', flag: '🇬🇳' },
   'ga': { name: 'Gabón', flag: '🇬🇦' },
+  'ba': { name: 'Bosnia & Herzegovina', flag: '🇧🇦' },
+  'jo': { name: 'Jordania', flag: '🇯🇴' },
+  'gb-sct': { name: 'Escocia', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
 };
 
 export function getCountry(code) {

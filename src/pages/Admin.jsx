@@ -9,7 +9,8 @@ import { Label } from '../components/ui/Label';
 import { Select } from '../components/ui/Select';
 import CountrySelector from '../components/ui/CountrySelector';
 import { recalculateAllPoints } from '../utils/scoring';
-import { Trash2, Plus, Save, RefreshCw, X, Building2 } from 'lucide-react';
+import { importGroupMatches, hasExistingMatches } from '../utils/importMatches';
+import { Trash2, Plus, Save, RefreshCw, X, Building2, Upload, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Admin() {
@@ -34,6 +35,11 @@ export default function Admin() {
   const [modalMatch, setModalMatch] = useState(null);
   const [modalHomeScore, setModalHomeScore] = useState('');
   const [modalAwayScore, setModalAwayScore] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importClientId, setImportClientId] = useState('');
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  const [importError, setImportError] = useState('');
+  const [importSuccess, setImportSuccess] = useState('');
 
   const countryNames = {
     af: 'Afganistán', al: 'Albania', de: 'Alemania', sa: 'Arabia Saudita', dz: 'Argelia',
@@ -49,13 +55,15 @@ export default function Admin() {
     pa: 'Panamá', py: 'Paraguay', pe: 'Perú', pl: 'Polonia', pt: 'Portugal',
     ro: 'Rumania', ru: 'Rusia', sn: 'Senegal', rs: 'Serbia', za: 'Sudáfrica',
     se: 'Suecia', ch: 'Suiza', tn: 'Túnez', tr: 'Turquía', ua: 'Ucrania',
-    uy: 'Uruguay'
+    uy: 'Uruguay',
+    ba: 'Bosnia & Herzegovina', jo: 'Jordania', cz: 'República Checa',
+    sco: 'Escocia', cv: 'Cabo Verde', cd: 'Congo'
   };
 
   const groups = [
     'Grupo A', 'Grupo B', 'Grupo C', 'Grupo D', 'Grupo E', 'Grupo F',
     'Grupo G', 'Grupo H', 'Grupo I', 'Grupo J', 'Grupo K', 'Grupo L',
-    'Octavos de Final', 'Cuartos de Final', 'Semifinales', 'Tercer Lugar', 'Final'
+    'Dieciseisavos de Final', 'Octavos de Final', 'Cuartos de Final', 'Semifinales', 'Tercer Lugar', 'Final'
   ];
 
   useEffect(() => {
@@ -188,6 +196,34 @@ export default function Admin() {
     }
   }
 
+  async function handleImport(clientId) {
+    if (!clientId) return;
+    setImportError('');
+    setImportSuccess('');
+    setImportProgress({ current: 0, total: 0 });
+
+    const existing = await hasExistingMatches(db, clientId);
+    if (existing) {
+      const ok = window.confirm('Este cliente ya tiene partidos. ¿Continuar de todas formas? (se agregarán duplicados)');
+      if (!ok) return;
+    }
+
+    setImporting(true);
+    try {
+      const client = clients.find(c => c.id === clientId);
+      const total = await importGroupMatches(db, clientId, client?.name || '', (current, total) => {
+        setImportProgress({ current, total });
+      });
+      setImportSuccess(`Se importaron ${total} partidos de fase de grupos correctamente.`);
+      loadMatches();
+    } catch (error) {
+      console.error('Error importando partidos:', error);
+      setImportError(error.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   if (!currentUser?.isAdmin) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center">
@@ -243,6 +279,63 @@ export default function Admin() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No hay clientes creados aún</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5" />
+            Importar partidos desde JSON
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Importa los 72 partidos de la fase de grupos del Mundial 2026 desde el archivo <code>partidos.json</code>.
+            Los partidos de eliminación directa se agregan manualmente cuando se definan los clasificados.
+          </p>
+          <div className="flex items-end gap-3">
+            <div className="space-y-2 flex-1">
+              <Label>Cliente destino</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={importClientId}
+                onChange={(e) => setImportClientId(e.target.value)}
+                disabled={importing}
+              >
+                <option value="">Seleccionar cliente</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <Button
+              onClick={() => handleImport(importClientId)}
+              disabled={!importClientId || importing}
+            >
+              {importing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Importando... ({importProgress.current}/{importProgress.total})
+                </>
+              ) : (
+                <>
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Importar partidos
+                </>
+              )}
+            </Button>
+          </div>
+          {importError && (
+            <div className="mt-3 text-sm text-red-600 bg-red-50 p-3 rounded-md">
+              Error: {importError}
+            </div>
+          )}
+          {importSuccess && (
+            <div className="mt-3 text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-md">
+              {importSuccess}
+            </div>
           )}
         </CardContent>
       </Card>
