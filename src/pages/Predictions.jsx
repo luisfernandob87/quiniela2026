@@ -65,7 +65,7 @@ export default function Predictions() {
         return;
       }
 
-      const matchTime = match.dateTimestamp || new Date(match.date).getTime();
+      const matchTime = match.dateTimestamp || (match.date ? new Date(match.date).getTime() : 0);
       if (Date.now() > matchTime) {
         console.warn('El partido ya comenzó');
         return;

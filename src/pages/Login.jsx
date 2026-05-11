@@ -59,6 +59,7 @@ export default function Login() {
         const client = clients.find(c => c.id === clientId);
         await signup(email, password, displayName, clientId || '', client?.name || '');
       }
+      window.scrollTo(0, 0);
       navigate('/');
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {

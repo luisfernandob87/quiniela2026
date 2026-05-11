@@ -249,7 +249,7 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
           )}
 
           {/* Saved prediction — editable */}
-          {isLocked && (
+          {isLocked && prediction && (
             <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg py-2 px-4">
                 <Lock className="w-4 h-4 shrink-0" />
