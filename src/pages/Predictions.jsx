@@ -85,7 +85,7 @@ export default function Predictions() {
     }
   }
 
-  const groups = [...new Set(matches.map(m => m.group).filter(Boolean))];
+  const groups = [...new Set(matches.map(m => m.group).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
   const now = clock;
   const sorted = [...matches].sort((a, b) => {
     const aDone = a.result?.homeScore != null || (a.dateTimestamp || new Date(a.date).getTime()) < now;
