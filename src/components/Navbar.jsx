@@ -4,12 +4,13 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/Button';
-import { Trophy, LogOut, User, Shield } from 'lucide-react';
+import { LogOut, User, Shield, Trophy, Menu, X } from 'lucide-react';
 import { calculatePoints } from '../utils/scoring';
 
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
   const [livePoints, setLivePoints] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,48 +53,95 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-primary text-primary-foreground shadow-lg">
+    <nav className="bg-gradient-to-r from-emerald-800 via-green-700 to-emerald-800 text-white shadow-lg border-b border-gold-500/20 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center gap-2">
-            <Trophy className="w-6 h-6" />
-            <span className="font-bold text-xl">Quiniela 2026</span>
+          <Link to="/" className="flex items-center gap-2 group">
+            <img src="/img/logo-sm.png" alt="Quiniela 2026" className="w-8 h-8 object-contain transition-transform duration-300 group-hover:scale-110" />
+            <span className="font-bold text-xl tracking-tight">
+              Quiniela <span className="text-yellow-300">2026</span>
+            </span>
           </Link>
 
-          <div className="flex items-center gap-4">
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-4">
             {currentUser && (
               <>
-                <Link to="/predictions" className="hover:underline text-sm hidden sm:block">
+                <Link to="/predictions" className="text-white/80 hover:text-white transition-colors text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-white/10">
                   Predicciones
                 </Link>
-                <Link to="/ranking" className="hover:underline text-sm hidden sm:block">
+                <Link to="/ranking" className="text-white/80 hover:text-white transition-colors text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-white/10">
                   Ranking
                 </Link>
                 {currentUser.isAdmin && (
-                  <Link to="/admin" className="hover:underline text-sm flex items-center gap-1">
+                  <Link to="/admin" className="text-white/80 hover:text-white transition-colors text-sm font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-white/10">
                     <Shield className="w-4 h-4" />
                     Admin
                   </Link>
                 )}
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">{currentUser.displayName}</span>
+                <div className="flex items-center gap-3 text-sm pl-3 border-l border-white/20">
+                  <User className="w-4 h-4 text-white/60" />
+                  <span className="text-white/90 font-medium">{currentUser.displayName}</span>
                   {currentUser.clientName && (
-                    <span className="hidden sm:inline text-primary-foreground/70 text-xs">
-                      ({currentUser.clientName})
+                    <span className="text-white/50 text-xs hidden lg:inline">
+                      {currentUser.clientName}
                     </span>
                   )}
-                  <span className="bg-primary-foreground/20 px-2 py-1 rounded-full text-xs">
-                    {livePoints} pts
-                  </span>
+                  <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border border-yellow-400/30 rounded-full px-3 py-1">
+                    <Trophy className="w-3.5 h-3.5 text-yellow-300" />
+                    <span className="font-bold text-yellow-200 text-xs">{livePoints}</span>
+                    <span className="text-yellow-300/60 text-[10px] uppercase tracking-wider">pts</span>
+                  </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleLogout} className="text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/20">
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-white/70 hover:text-white hover:bg-white/10">
                   <LogOut className="w-4 h-4" />
                 </Button>
               </>
             )}
           </div>
+
+          {/* Mobile hamburger */}
+          <div className="md:hidden flex items-center gap-2">
+            {currentUser && (
+              <>
+                <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border border-yellow-400/30 rounded-full px-2.5 py-1">
+                  <Trophy className="w-3 h-3 text-yellow-300" />
+                  <span className="font-bold text-yellow-200 text-xs">{livePoints}</span>
+                  <span className="text-yellow-300/60 text-[9px] uppercase tracking-wider">pts</span>
+                </div>
+                <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                  {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Mobile menu */}
+        {menuOpen && currentUser && (
+          <div className="md:hidden pb-4 pt-2 space-y-1 border-t border-white/10 animate-fadeInUp">
+            <Link to="/predictions" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+              Predicciones
+            </Link>
+            <Link to="/ranking" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+              Ranking
+            </Link>
+            {currentUser.isAdmin && (
+              <Link to="/admin" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                <Shield className="w-4 h-4 inline mr-1" />
+                Admin
+              </Link>
+            )}
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-white/60">
+              <User className="w-4 h-4" />
+              <span>{currentUser.displayName}</span>
+            </div>
+            <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm text-red-300 hover:text-red-200 hover:bg-white/10 rounded-lg transition-colors">
+              <LogOut className="w-4 h-4 inline mr-1" />
+              Cerrar sesión
+            </button>
+          </div>
+        )}
       </div>
     </nav>
   );

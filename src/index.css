@@ -21,6 +21,8 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 142.1 76.2% 36.3%;
   --radius: 0.5rem;
+  --gold: 51 100% 50%;
+  --gold-dark: 43 54% 54%;
 }
 
 .dark {
@@ -43,6 +45,8 @@
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 142.1 70.6% 45.3%;
+  --gold: 51 100% 50%;
+  --gold-dark: 43 54% 54%;
 }
 
 * {
@@ -52,4 +56,66 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  background-image:
+    radial-gradient(ellipse at 20% 50%, hsla(142, 76%, 36%, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, hsla(51, 100%, 50%, 0.06) 0%, transparent 50%);
 }
+
+/* ====== Keyframe Animations ====== */
+
+/* Subtle floating effect for the trophy */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Gold glow pulse */
+@keyframes glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4)); }
+  50% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+}
+
+/* Page content entrance */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Gold badge pulsing */
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(255, 215, 0, 0);
+  }
+}
+
+/* Utility classes for animations */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+/* Delay utilities for staggered animations */
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-400 { animation-delay: 400ms; }
+.animation-delay-500 { animation-delay: 500ms; }

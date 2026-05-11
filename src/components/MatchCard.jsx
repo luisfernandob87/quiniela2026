@@ -6,6 +6,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Label } from './ui/Label';
 import { calculatePoints } from '../utils/scoring';
+import { cn } from '../utils/cn';
 import { Star, CheckCircle, Lock, X, Save, Clock } from 'lucide-react';
 
 function getFlagUrl(code, size = 'w40') {
@@ -47,34 +48,39 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
   const isExpired = matchTime > 0 && Date.now() > matchTime;
 
   return (
-    <Card className="w-full overflow-hidden transition-all hover:shadow-md">
+    <Card className="w-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border-0 shadow-md">
       <CardContent className="p-0">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 py-2 text-white">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-700 px-4 py-2.5 text-white">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-medium uppercase tracking-wide flex items-center gap-2">
+            <span className="font-semibold uppercase tracking-wider flex items-center gap-2">
               {match.group}
               {!hasResult && (
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${isExpired ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-200'}`}>
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+                  isExpired
+                    ? 'bg-red-500/20 text-red-200 border border-red-400/30'
+                    : 'bg-green-400/20 text-green-200 border border-green-400/30'
+                )}>
                   {isExpired ? 'Cerrado' : 'Abierto'}
                 </span>
               )}
             </span>
-            <span className="opacity-90">
+            <span className="opacity-80 text-white/70">
               {format(new Date(match.date), "d MMM yyyy - HH:mm", { locale: es })}
             </span>
           </div>
         </div>
 
         <div className="p-4 sm:p-6">
-          {/* Mobile: centered score with teams */}
+          {/* Mobile layout */}
           <div className="sm:hidden">
-            {/* Home team */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <img
                   src={getFlagUrl(match.homeTeamCode, 'w80')}
                   alt={match.homeTeam}
-                  className="w-8 h-6 object-cover rounded shadow-sm flex-shrink-0"
+                  className="w-9 h-7 object-cover rounded shadow-sm flex-shrink-0 border border-gray-200"
                 />
                 <span className="font-bold text-sm truncate">{match.homeTeam}</span>
               </div>
@@ -89,20 +95,24 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                     min="0"
                     value={homeScore}
                     onChange={(e) => setHomeScore(e.target.value)}
-                    className="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2"
+                    className={cn(
+                      "w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-200",
+                      isLocked || !canPredict
+                        ? "border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+                        : "border-green-300 dark:border-green-600 focus:border-yellow-400 focus:ring-yellow-400/30"
+                    )}
                     disabled={isLocked || !canPredict}
                   />
                 )}
               </div>
             </div>
 
-            {/* Away team */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <img
                   src={getFlagUrl(match.awayTeamCode, 'w80')}
                   alt={match.awayTeam}
-                  className="w-8 h-6 object-cover rounded shadow-sm flex-shrink-0"
+                  className="w-9 h-7 object-cover rounded shadow-sm flex-shrink-0 border border-gray-200"
                 />
                 <span className="font-bold text-sm truncate">{match.awayTeam}</span>
               </div>
@@ -117,7 +127,12 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                     min="0"
                     value={awayScore}
                     onChange={(e) => setAwayScore(e.target.value)}
-                    className="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2"
+                    className={cn(
+                      "w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all duration-200",
+                      isLocked || !canPredict
+                        ? "border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+                        : "border-green-300 dark:border-green-600 focus:border-yellow-400 focus:ring-yellow-400/30"
+                    )}
                     disabled={isLocked || !canPredict}
                   />
                 )}
@@ -125,25 +140,25 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
             </div>
           </div>
 
-          {/* Desktop: side-by-side */}
+          {/* Desktop layout */}
           <div className="hidden sm:flex sm:items-center sm:justify-between sm:gap-6">
             <div className="flex-1 flex items-center justify-end gap-3">
               <span className="font-bold text-lg text-right">{match.homeTeam}</span>
               <img
                 src={getFlagUrl(match.homeTeamCode, 'w80')}
                 alt={match.homeTeam}
-                className="w-12 h-8 object-cover rounded shadow-md flex-shrink-0"
+                className="w-14 h-9 object-cover rounded shadow-md flex-shrink-0 border border-gray-200"
               />
             </div>
 
             <div className="flex items-center gap-2 px-4">
               {hasResult ? (
                 <div className="flex items-center gap-2">
-                  <span className="w-14 h-14 rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 text-white text-4xl font-black flex items-center justify-center shadow-inner">
+                  <span className="w-16 h-16 rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 text-white text-4xl font-black flex items-center justify-center shadow-inner">
                     {match.result.homeScore}
                   </span>
-                  <span className="text-muted-foreground text-lg font-light">-</span>
-                  <span className="w-14 h-14 rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 text-white text-4xl font-black flex items-center justify-center shadow-inner">
+                  <span className="text-muted-foreground text-xl font-light">-</span>
+                  <span className="w-16 h-16 rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 text-white text-4xl font-black flex items-center justify-center shadow-inner">
                     {match.result.awayScore}
                   </span>
                 </div>
@@ -154,16 +169,26 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                     min="0"
                     value={homeScore}
                     onChange={(e) => setHomeScore(e.target.value)}
-                    className="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2"
+                    className={cn(
+                      "w-16 h-16 text-center text-3xl font-bold rounded-xl border-2 transition-all duration-200",
+                      isLocked || !canPredict
+                        ? "border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+                        : "border-green-300 dark:border-green-600 focus:border-yellow-400 focus:ring-yellow-400/30"
+                    )}
                     disabled={isLocked || !canPredict}
                   />
-                  <span className="text-muted-foreground font-light text-lg mx-1">-</span>
+                  <span className="text-muted-foreground font-light text-xl mx-1">-</span>
                   <Input
                     type="number"
                     min="0"
                     value={awayScore}
                     onChange={(e) => setAwayScore(e.target.value)}
-                    className="w-14 h-14 text-center text-2xl font-bold rounded-xl border-2"
+                    className={cn(
+                      "w-16 h-16 text-center text-3xl font-bold rounded-xl border-2 transition-all duration-200",
+                      isLocked || !canPredict
+                        ? "border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+                        : "border-green-300 dark:border-green-600 focus:border-yellow-400 focus:ring-yellow-400/30"
+                    )}
                     disabled={isLocked || !canPredict}
                   />
                 </div>
@@ -174,18 +199,19 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
               <img
                 src={getFlagUrl(match.awayTeamCode, 'w80')}
                 alt={match.awayTeam}
-                className="w-12 h-8 object-cover rounded shadow-md flex-shrink-0"
+                className="w-14 h-9 object-cover rounded shadow-md flex-shrink-0 border border-gray-200"
               />
               <span className="font-bold text-lg">{match.awayTeam}</span>
             </div>
           </div>
 
+          {/* Save button */}
           {!hasResult && !saved && canPredict && (
-            <div className="mt-4 flex justify-center">
+            <div className="mt-5 flex justify-center">
               <Button
                 onClick={handleSave}
                 size="lg"
-                className="w-full sm:w-auto px-8"
+                className="w-full sm:w-auto px-10 shadow-lg hover:shadow-xl"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Guardar predicción
@@ -193,37 +219,44 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
             </div>
           )}
 
+          {/* Expired warning */}
           {!hasResult && !saved && isExpired && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded-lg py-2.5 px-4">
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg py-2.5 px-4">
               <Clock className="w-4 h-4 shrink-0" />
               <span>Predicciones cerradas — El partido ya comenzó</span>
             </div>
           )}
 
+          {/* Locked */}
           {isLocked && (
             <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg py-2 px-4">
               <Lock className="w-4 h-4" />
-              <span>Predicción guardada - Ya no se puede editar</span>
+              <span>Predicción guardada — Ya no se puede editar</span>
             </div>
           )}
 
+          {/* Prediction shown */}
           {hasResult && prediction && (
             <div className="mt-3 text-center text-sm text-muted-foreground">
               Tu pronóstico: {prediction.homeScore} - {prediction.awayScore}
             </div>
           )}
 
+          {/* Points earned */}
           {points !== null && (
             <div className="mt-4 flex justify-center">
               <div className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full font-medium",
-                points > 0 ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-500"
+                "flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all duration-300",
+                points > 0
+                  ? "bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-500/20 dark:to-yellow-600/10 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-600/30 shadow-sm"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
               )}>
                 <Star className={cn(
                   "w-5 h-5",
-                  points > 0 && "fill-yellow-500 text-yellow-500"
+                  points > 0 && "fill-yellow-500 text-yellow-500",
+                  points === 3 && "animate-pulse"
                 )} />
-                <span className="text-base">
+                <span className="text-base font-semibold">
                   +{points} {points === 1 ? 'punto' : 'puntos'}
                   {points === 3 && ' ¡Resultado exacto!'}
                   {points === 1 && match.result.homeScore === match.result.awayScore ? ' Empate correcto' : ''}
@@ -235,9 +268,10 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
         </div>
       </CardContent>
 
+      {/* Confirmation modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg border bg-card text-card-foreground shadow-lg w-full max-w-sm mx-4 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="rounded-xl border bg-card text-card-foreground shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-fadeInUp">
             <div className="flex items-center justify-between p-5 pb-2">
               <h2 className="text-lg font-bold">Confirmar predicción</h2>
               <button
@@ -253,16 +287,16 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                   <img
                     src={getFlagUrl(match.homeTeamCode, 'w80')}
                     alt={match.homeTeam}
-                    className="w-12 h-8 object-cover rounded shadow-sm"
+                    className="w-14 h-9 object-cover rounded shadow-sm border border-gray-200"
                   />
                   <span className="font-semibold text-xs">{match.homeTeam}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-12 h-12 rounded-lg bg-primary/10 text-primary text-2xl font-black flex items-center justify-center">
+                  <span className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-700 text-white text-2xl font-black flex items-center justify-center shadow-md">
                     {homeScore || '0'}
                   </span>
                   <span className="text-muted-foreground text-lg font-light">-</span>
-                  <span className="w-12 h-12 rounded-lg bg-primary/10 text-primary text-2xl font-black flex items-center justify-center">
+                  <span className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-700 text-white text-2xl font-black flex items-center justify-center shadow-md">
                     {awayScore || '0'}
                   </span>
                 </div>
@@ -270,7 +304,7 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                   <img
                     src={getFlagUrl(match.awayTeamCode, 'w80')}
                     alt={match.awayTeam}
-                    className="w-12 h-8 object-cover rounded shadow-sm"
+                    className="w-14 h-9 object-cover rounded shadow-sm border border-gray-200"
                   />
                   <span className="font-semibold text-xs">{match.awayTeam}</span>
                 </div>
@@ -284,7 +318,7 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                 >
                   Cancelar
                 </Button>
-                <Button className="flex-1" onClick={handleConfirmSave}>
+                <Button className="flex-1" variant="gold" onClick={handleConfirmSave}>
                   <Save className="w-4 h-4 mr-2" />
                   Confirmar
                 </Button>
@@ -295,8 +329,4 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
       )}
     </Card>
   );
-}
-
-function cn(...classes) {
-  return classes.filter(Boolean).join(' ');
 }
