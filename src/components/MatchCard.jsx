@@ -18,6 +18,7 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
   const [homeScore, setHomeScore] = useState(prediction?.homeScore || '');
   const [awayScore, setAwayScore] = useState(prediction?.awayScore || '');
   const [saved, setSaved] = useState(!!prediction);
+  const [editing, setEditing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,16 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
       setSaved(true);
     }
   }, [prediction]);
+
+  function handleEdit() {
+    setEditing(true);
+  }
+
+  function handleCancelEdit() {
+    setEditing(false);
+    setHomeScore(prediction?.homeScore || '');
+    setAwayScore(prediction?.awayScore || '');
+  }
 
   function handleSave() {
     setShowConfirm(true);
@@ -39,16 +50,18 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
       awayScore: parseInt(awayScore || '0')
     });
     setSaved(true);
+    setEditing(false);
   }
 
   const hasResult = match.result && match.result.homeScore !== null;
   const points = hasResult && prediction ? calculatePoints(prediction, match.result) : null;
-  const isLocked = saved && !hasResult;
+  const isLocked = saved && !hasResult && !editing;
   const matchTime = match.dateTimestamp || (match.date ? new Date(match.date).getTime() : 0);
   const isExpired = matchTime > 0 && Date.now() > matchTime;
 
   return (
-    <Card className="w-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border-0 shadow-md">
+    <>
+    <Card className="w-full transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 border-0 shadow-md">
       <CardContent className="p-0">
         {/* Header */}
         <div className="bg-gradient-to-r from-emerald-700 via-green-600 to-emerald-700 px-4 py-2.5 text-white">
@@ -205,17 +218,25 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
             </div>
           </div>
 
-          {/* Save button */}
-          {!hasResult && !saved && canPredict && (
-            <div className="mt-5 flex justify-center">
+          {/* Save / Update button */}
+          {!hasResult && (!saved || editing) && canPredict && (
+            <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button
                 onClick={handleSave}
                 size="lg"
                 className="w-full sm:w-auto px-10 shadow-lg hover:shadow-xl"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Guardar predicción
+                {editing ? 'Actualizar predicción' : 'Guardar predicción'}
               </Button>
+              {editing && (
+                <button
+                  onClick={handleCancelEdit}
+                  className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                >
+                  Cancelar edición
+                </button>
+              )}
             </div>
           )}
 
@@ -227,11 +248,23 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
             </div>
           )}
 
-          {/* Locked */}
+          {/* Saved prediction — editable */}
           {isLocked && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg py-2 px-4">
-              <Lock className="w-4 h-4" />
-              <span>Predicción guardada — Ya no se puede editar</span>
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg py-2 px-4">
+                <Lock className="w-4 h-4 shrink-0" />
+                <span>
+                  Tu predicción: <strong>{prediction.homeScore} - {prediction.awayScore}</strong>
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                className="shrink-0"
+              >
+                Editar
+              </Button>
             </div>
           )}
 
@@ -256,7 +289,7 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                   points > 0 && "fill-yellow-500 text-yellow-500",
                   points === 3 && "animate-pulse"
                 )} />
-                <span className="text-base font-semibold">
+                <span className="text-base font-semibold text-yellow-500">
                   +{points} {points === 1 ? 'punto' : 'puntos'}
                   {points === 3 && ' ¡Resultado exacto!'}
                   {points === 1 && match.result.homeScore === match.result.awayScore ? ' Empate correcto' : ''}
@@ -267,16 +300,20 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
           )}
         </div>
       </CardContent>
+    </Card>
 
-      {/* Confirmation modal */}
+      {/* Confirmation modal — outside Card to avoid transform conflicts */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="rounded-xl border bg-card text-card-foreground shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-fadeInUp">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
+        >
+          <div className="rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
             <div className="flex items-center justify-between p-5 pb-2">
-              <h2 className="text-lg font-bold">Confirmar predicción</h2>
+              <h2 className="text-lg font-bold text-white">Confirmar predicción</h2>
               <button
                 onClick={() => setShowConfirm(false)}
-                className="p-1 rounded-full hover:bg-muted transition-colors"
+                className="p-1 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -287,15 +324,15 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                   <img
                     src={getFlagUrl(match.homeTeamCode, 'w80')}
                     alt={match.homeTeam}
-                    className="w-14 h-9 object-cover rounded shadow-sm border border-gray-200"
+                    className="w-14 h-9 object-cover rounded shadow-sm border border-gray-600"
                   />
-                  <span className="font-semibold text-xs">{match.homeTeam}</span>
+                  <span className="font-semibold text-xs text-white">{match.homeTeam}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-700 text-white text-2xl font-black flex items-center justify-center shadow-md">
                     {homeScore || '0'}
                   </span>
-                  <span className="text-muted-foreground text-lg font-light">-</span>
+                  <span className="text-gray-400 text-lg font-light">-</span>
                   <span className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-700 text-white text-2xl font-black flex items-center justify-center shadow-md">
                     {awayScore || '0'}
                   </span>
@@ -304,16 +341,16 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                   <img
                     src={getFlagUrl(match.awayTeamCode, 'w80')}
                     alt={match.awayTeam}
-                    className="w-14 h-9 object-cover rounded shadow-sm border border-gray-200"
+                    className="w-14 h-9 object-cover rounded shadow-sm border border-gray-600"
                   />
-                  <span className="font-semibold text-xs">{match.awayTeam}</span>
+                  <span className="font-semibold text-xs text-white">{match.awayTeam}</span>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 text-white border-white/30 hover:bg-white/10"
                   onClick={() => setShowConfirm(false)}
                 >
                   Cancelar
@@ -327,6 +364,6 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
           </div>
         </div>
       )}
-    </Card>
+    </>
   );
 }

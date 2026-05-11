@@ -35,6 +35,7 @@ export default function Admin() {
   const [modalMatch, setModalMatch] = useState(null);
   const [modalHomeScore, setModalHomeScore] = useState('');
   const [modalAwayScore, setModalAwayScore] = useState('');
+  const [isEditingResult, setIsEditingResult] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importClientId, setImportClientId] = useState('');
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
@@ -181,6 +182,19 @@ export default function Admin() {
       loadMatches();
     } catch (error) {
       console.error('Error actualizando resultado:', error);
+    }
+  }
+
+  async function clearResult(matchId) {
+    try {
+      const match = matches.find(m => m.id === matchId);
+      await updateDoc(doc(db, 'matches', matchId), { result: null });
+      if (match?.clientId) {
+        await recalculateAllPoints(db, match.clientId);
+      }
+      loadMatches();
+    } catch (error) {
+      console.error('Error eliminando resultado:', error);
     }
   }
 
@@ -506,20 +520,19 @@ export default function Admin() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                      {!match.result && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setModalMatch(match);
-                          setModalHomeScore('');
-                          setModalAwayScore('');
-                          setModalOpen(true);
-                        }}
-                      >
-                        <Save className="w-4 h-4" />
-                      </Button>
-                    )}
+                    <Button
+                      variant={match.result ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setModalMatch(match);
+                        setModalHomeScore(match.result ? String(match.result.homeScore) : '');
+                        setModalAwayScore(match.result ? String(match.result.awayScore) : '');
+                        setIsEditingResult(!!match.result);
+                        setModalOpen(true);
+                      }}
+                    >
+                      <Save className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="destructive"
                       size="sm"
@@ -538,7 +551,7 @@ export default function Admin() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="rounded-lg border bg-card text-card-foreground shadow-lg w-full max-w-md mx-4 overflow-hidden">
             <div className="flex items-center justify-between p-6 pb-2">
-              <h2 className="text-xl font-bold">Registrar Resultado</h2>
+              <h2 className="text-xl font-bold">{isEditingResult ? 'Editar Resultado' : 'Registrar Resultado'}</h2>
               <button
                 onClick={() => setModalOpen(false)}
                 className="p-1 rounded-full hover:bg-muted transition-colors"
@@ -600,15 +613,37 @@ export default function Admin() {
                 >
                   Cancelar
                 </Button>
+                {isEditingResult && (
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => {
+                      if (!window.confirm(`¿Eliminar el resultado de ${modalMatch.homeTeam} vs ${modalMatch.awayTeam}?`)) return;
+                      clearResult(modalMatch.id);
+                      setModalOpen(false);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Quitar resultado
+                  </Button>
+                )}
                 <Button
                   className="flex-1"
                   onClick={() => {
+                    const prevScore = modalMatch.result
+                      ? `${modalMatch.result.homeScore}-${modalMatch.result.awayScore}`
+                      : '—';
+                    const newScore = `${modalHomeScore || '0'}-${modalAwayScore || '0'}`;
+                    const msg = isEditingResult
+                      ? `¿Estás seguro de cambiar el resultado de ${modalMatch.homeTeam} vs ${modalMatch.awayTeam}?\n\nAnterior: ${prevScore}\nNuevo: ${newScore}`
+                      : `¿Registrar resultado de ${modalMatch.homeTeam} vs ${modalMatch.awayTeam}?\n\n${newScore}`;
+                    if (!window.confirm(msg)) return;
                     updateResult(modalMatch.id, modalHomeScore, modalAwayScore);
                     setModalOpen(false);
                   }}
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Guardar
+                  {isEditingResult ? 'Actualizar' : 'Guardar'}
                 </Button>
               </div>
             </div>
