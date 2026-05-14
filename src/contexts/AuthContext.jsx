@@ -30,6 +30,7 @@ export function AuthProvider({ children }) {
       clientName,
       points: 0,
       isAdmin: isFirstUser,
+      enabled: isFirstUser,
       createdAt: new Date().toISOString()
     };
     await setDoc(doc(db, 'users', user.uid), userData);
@@ -50,7 +51,9 @@ export function AuthProvider({ children }) {
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-          setCurrentUser({ ...user, ...userDoc.data() });
+          const userData = userDoc.data();
+          if (userData.enabled === undefined) userData.enabled = true;
+          setCurrentUser({ ...user, ...userData });
         } else {
           setCurrentUser(user);
         }

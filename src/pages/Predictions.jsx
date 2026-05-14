@@ -11,6 +11,7 @@ export default function Predictions() {
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [pendingOnly, setPendingOnly] = useState(false);
   const [clock, setClock] = useState(Date.now());
   const { currentUser } = useAuth();
 
@@ -29,7 +30,7 @@ export default function Predictions() {
 
   async function loadMatches() {
     try {
-      const q = query(collection(db, 'matches'), where('clientId', '==', currentUser.clientId));
+      const q = query(collection(db, 'matches'));
       const snapshot = await getDocs(q);
       const matchesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMatches(matchesData);
@@ -56,6 +57,10 @@ export default function Predictions() {
 
   async function handleUpdatePrediction(matchId, prediction) {
     if (!currentUser) return;
+    if (currentUser.enabled === false) {
+      console.warn('Usuario deshabilitado');
+      return;
+    }
     try {
       const match = matches.find(m => m.id === matchId);
       if (!match) return;
@@ -86,16 +91,12 @@ export default function Predictions() {
   }
 
   const groups = [...new Set(matches.map(m => m.group).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
-  const now = clock;
-  const sorted = [...matches].sort((a, b) => {
-    const aDone = a.result?.homeScore != null || (a.dateTimestamp || new Date(a.date).getTime()) < now;
-    const bDone = b.result?.homeScore != null || (b.dateTimestamp || new Date(b.date).getTime()) < now;
-    if (aDone !== bDone) return aDone ? 1 : -1;
-    return (a.dateTimestamp || new Date(a.date).getTime()) - (b.dateTimestamp || new Date(b.date).getTime());
-  });
-  const filteredMatches = filter === 'all'
-    ? sorted
-    : sorted.filter(m => m.group === filter);
+  const sorted = [...matches].sort((a, b) =>
+    (a.dateTimestamp || new Date(a.date).getTime()) - (b.dateTimestamp || new Date(b.date).getTime())
+  );
+  const filteredMatches = sorted
+    .filter(m => filter === 'all' || m.group === filter)
+    .filter(m => !pendingOnly || (m.result?.homeScore == null));
 
   const totalPoints = matches.reduce((sum, match) => {
     if (match.result && predictions[match.id]) {
@@ -113,6 +114,7 @@ export default function Predictions() {
   }
 
   function canPredict(match) {
+    if (currentUser?.enabled === false) return false;
     if (match.result && match.result.homeScore !== null) return false;
     const matchTime = match.dateTimestamp || (match.date ? new Date(match.date).getTime() : 0);
     if (matchTime > 0 && Date.now() > matchTime) return false;
@@ -128,6 +130,15 @@ export default function Predictions() {
             <span className="text-sm font-medium">Puntos: </span>
             <span className="text-lg font-bold text-primary">{totalPoints}</span>
           </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={pendingOnly}
+              onChange={(e) => setPendingOnly(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            Solo pendientes
+          </label>
           <Select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -140,6 +151,12 @@ export default function Predictions() {
           </Select>
         </div>
       </div>
+
+      {currentUser?.enabled === false && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-6 text-sm">
+          Tu cuenta está deshabilitada. Comunícate con el administrador para habilitar tus pronósticos.
+        </div>
+      )}
 
       {filteredMatches.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">

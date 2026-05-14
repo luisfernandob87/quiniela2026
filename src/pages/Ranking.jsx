@@ -24,7 +24,7 @@ export default function Ranking() {
     try {
       const usersQuery = query(collection(db, 'users'), where('clientId', '==', currentUser.clientId));
       const usersSnap = await getDocs(usersQuery);
-      const matchesQuery = query(collection(db, 'matches'), where('clientId', '==', currentUser.clientId));
+      const matchesQuery = query(collection(db, 'matches'));
       const matchesSnap = await getDocs(matchesQuery);
       const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
       const predictionsSnap = await getDocs(predictionsQuery);
@@ -68,7 +68,8 @@ export default function Ranking() {
   }
 
   const top3 = users.slice(0, 3);
-  const rest = users.slice(3);
+  const showPodium = top3.length > 0 && top3[0].points > 0;
+  const rest = showPodium ? users.slice(3) : users;
   const currentUserId = currentUser?.uid;
 
   if (loading) {
@@ -91,7 +92,7 @@ export default function Ranking() {
       </div>
 
       {/* Podium for top 3 */}
-      {top3.length > 0 && (
+      {showPodium && (
         <div className="mb-10">
           <div className="flex items-end justify-center gap-4 sm:gap-6">
             {/* 2nd place */}
@@ -229,7 +230,7 @@ function RankingRow({ user, isCurrentUser, isTop3 }) {
             <div>
               <h3 className={cn(
                 "font-semibold",
-                isCurrentUser && "text-yellow-800 dark:text-yellow-200"
+                isCurrentUser && "text-black "
               )}>
                 {user.displayName}
                 {isCurrentUser && (

@@ -27,7 +27,7 @@ export function calculatePoints(prediction, result) {
 }
 
 export async function recalculateAllPoints(db, clientId) {
-  const matchesQuery = query(collection(db, 'matches'), where('clientId', '==', clientId));
+  const matchesQuery = query(collection(db, 'matches'));
   const matchesSnap = await getDocs(matchesQuery);
   const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   

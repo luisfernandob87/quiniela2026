@@ -84,13 +84,12 @@ function parseMatchDateTime(dateStr, timeStr) {
   return { dateTime, dateTimestamp: dateTime.getTime() };
 }
 
-export async function hasExistingMatches(db, clientId) {
-  const q = query(collection(db, 'matches'), where('clientId', '==', clientId));
-  const snap = await getDocs(q);
+export async function hasExistingMatches(db) {
+  const snap = await getDocs(collection(db, 'matches'));
   return snap.docs.length > 0;
 }
 
-export async function importGroupMatches(db, clientId, clientName, onProgress) {
+export async function importGroupMatches(db, onProgress) {
   const groupMatches = partidosData.matches.filter(m => m.group);
   const total = groupMatches.length;
 
@@ -112,8 +111,6 @@ export async function importGroupMatches(db, clientId, clientName, onProgress) {
       date: dateTime.toISOString(),
       dateTimestamp,
       group,
-      clientId,
-      clientName,
       result: null,
       createdAt: new Date().toISOString(),
     });

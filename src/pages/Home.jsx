@@ -20,7 +20,7 @@ export default function Home() {
   async function loadLivePoints() {
     if (!currentUser.clientId) return;
     try {
-      const matchesQuery = query(collection(db, 'matches'), where('clientId', '==', currentUser.clientId));
+      const matchesQuery = query(collection(db, 'matches'));
       const matchesSnap = await getDocs(matchesQuery);
       const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
       const predictionsSnap = await getDocs(predictionsQuery);

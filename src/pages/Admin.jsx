@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, deleteDoc, doc, getDocs, query, orderBy, updateDoc, where } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, getDocs, query, orderBy, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -17,6 +17,7 @@ export default function Admin() {
   const { currentUser } = useAuth();
   const [matches, setMatches] = useState([]);
   const [clients, setClients] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newClientName, setNewClientName] = useState('');
   const [clientError, setClientError] = useState('');
@@ -27,8 +28,7 @@ export default function Admin() {
     time: '',
     group: '',
     homeScore: '',
-    awayScore: '',
-    clientId: ''
+    awayScore: ''
   });
   const [hasResult, setHasResult] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -37,7 +37,6 @@ export default function Admin() {
   const [modalAwayScore, setModalAwayScore] = useState('');
   const [isEditingResult, setIsEditingResult] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importClientId, setImportClientId] = useState('');
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importError, setImportError] = useState('');
   const [importSuccess, setImportSuccess] = useState('');
@@ -56,9 +55,9 @@ export default function Admin() {
     pa: 'Panamá', py: 'Paraguay', pe: 'Perú', pl: 'Polonia', pt: 'Portugal',
     ro: 'Rumania', ru: 'Rusia', sn: 'Senegal', rs: 'Serbia', za: 'Sudáfrica',
     se: 'Suecia', ch: 'Suiza', tn: 'Túnez', tr: 'Turquía', ua: 'Ucrania',
-    uy: 'Uruguay',
+    uy: 'Uruguay', uz: 'Uzbekistán',
     ba: 'Bosnia & Herzegovina', jo: 'Jordania', cz: 'República Checa',
-    sco: 'Escocia', cv: 'Cabo Verde', cd: 'Congo'
+    sco: 'Escocia', cv: 'Cabo Verde', cd: 'Congo', cw: 'Curaçao'
   };
 
   const groups = [
@@ -70,6 +69,7 @@ export default function Admin() {
   useEffect(() => {
     loadClients();
     loadMatches();
+    loadUsers();
   }, []);
 
   async function loadClients() {
@@ -78,6 +78,17 @@ export default function Admin() {
       setClients(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (error) {
       console.error('Error cargando clientes:', error);
+    }
+  }
+
+  async function loadUsers() {
+    try {
+      const snapshot = await getDocs(collection(db, 'users'));
+      const usersData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      usersData.sort((a, b) => a.displayName?.localeCompare(b.displayName) || 0);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error cargando usuarios:', error);
     }
   }
 
@@ -116,14 +127,11 @@ export default function Admin() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!formData.homeTeamCode || !formData.awayTeamCode || !formData.date || !formData.time || !formData.group || !formData.clientId) {
-      return;
-    }
+    if (!formData.homeTeamCode || !formData.awayTeamCode || !formData.date || !formData.time || !formData.group) return;
 
     try {
       const dateTime = new Date(`${formData.date}T${formData.time}`);
-      const client = clients.find(c => c.id === formData.clientId);
-      const matchData = {
+      await addDoc(collection(db, 'matches'), {
         homeTeam: countryNames[formData.homeTeamCode] || formData.homeTeamCode,
         awayTeam: countryNames[formData.awayTeamCode] || formData.awayTeamCode,
         homeTeamCode: formData.homeTeamCode,
@@ -131,25 +139,17 @@ export default function Admin() {
         date: dateTime.toISOString(),
         dateTimestamp: dateTime.getTime(),
         group: formData.group,
-        clientId: formData.clientId,
-        clientName: client?.name || '',
+        result: hasResult
+          ? { homeScore: parseInt(formData.homeScore) || 0, awayScore: parseInt(formData.awayScore) || 0 }
+          : null,
         createdAt: new Date().toISOString()
-      };
-
+      });
       if (hasResult) {
-        matchData.result = {
-          homeScore: parseInt(formData.homeScore) || 0,
-          awayScore: parseInt(formData.awayScore) || 0
-        };
-      } else {
-        matchData.result = null;
+        for (const client of clients) {
+          await recalculateAllPoints(db, client.id);
+        }
       }
-
-      await addDoc(collection(db, 'matches'), matchData);
-      if (hasResult) {
-        await recalculateAllPoints(db, formData.clientId);
-      }
-      setFormData({ homeTeamCode: '', awayTeamCode: '', date: '', time: '', group: '', homeScore: '', awayScore: '', clientId: '' });
+      setFormData({ homeTeamCode: '', awayTeamCode: '', date: '', time: '', group: '', homeScore: '', awayScore: '' });
       setHasResult(false);
       loadMatches();
     } catch (error) {
@@ -169,15 +169,11 @@ export default function Admin() {
 
   async function updateResult(matchId, homeScore, awayScore) {
     try {
-      const match = matches.find(m => m.id === matchId);
       await updateDoc(doc(db, 'matches', matchId), {
-        result: {
-          homeScore: parseInt(homeScore) || 0,
-          awayScore: parseInt(awayScore) || 0
-        }
+        result: { homeScore: parseInt(homeScore) || 0, awayScore: parseInt(awayScore) || 0 }
       });
-      if (match?.clientId) {
-        await recalculateAllPoints(db, match.clientId);
+      for (const client of clients) {
+        await recalculateAllPoints(db, client.id);
       }
       loadMatches();
     } catch (error) {
@@ -187,14 +183,22 @@ export default function Admin() {
 
   async function clearResult(matchId) {
     try {
-      const match = matches.find(m => m.id === matchId);
       await updateDoc(doc(db, 'matches', matchId), { result: null });
-      if (match?.clientId) {
-        await recalculateAllPoints(db, match.clientId);
+      for (const client of clients) {
+        await recalculateAllPoints(db, client.id);
       }
       loadMatches();
     } catch (error) {
       console.error('Error eliminando resultado:', error);
+    }
+  }
+
+  async function handleToggleUser(userId, enabled) {
+    try {
+      await updateDoc(doc(db, 'users', userId), { enabled });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, enabled } : u));
+    } catch (error) {
+      console.error('Error actualizando usuario:', error);
     }
   }
 
@@ -210,25 +214,22 @@ export default function Admin() {
     }
   }
 
-  async function handleImport(clientId) {
-    if (!clientId) return;
-    setImportError('');
-    setImportSuccess('');
-    setImportProgress({ current: 0, total: 0 });
-
-    const existing = await hasExistingMatches(db, clientId);
+  async function handleImport() {
+    const existing = await hasExistingMatches(db);
     if (existing) {
-      const ok = window.confirm('Este cliente ya tiene partidos. ¿Continuar de todas formas? (se agregarán duplicados)');
+      const ok = window.confirm('Ya existen partidos. ¿Continuar de todas formas? (se agregarán duplicados)');
       if (!ok) return;
     }
 
+    setImportError('');
+    setImportSuccess('');
+    setImportProgress({ current: 0, total: 0 });
     setImporting(true);
     try {
-      const client = clients.find(c => c.id === clientId);
-      const total = await importGroupMatches(db, clientId, client?.name || '', (current, total) => {
+      const total = await importGroupMatches(db, (current, total) => {
         setImportProgress({ current, total });
       });
-      setImportSuccess(`Se importaron ${total} partidos de fase de grupos correctamente.`);
+      setImportSuccess(`Se importaron ${total} partidos de la fase de grupos correctamente.`);
       loadMatches();
     } catch (error) {
       console.error('Error importando partidos:', error);
@@ -300,6 +301,62 @@ export default function Admin() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <Building2 className="w-5 h-5" />
+            Usuarios por Cliente
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {users.length > 0 ? (
+            <div className="space-y-4">
+              {(() => {
+                const grouped = {};
+                for (const user of users) {
+                  const key = user.clientName || user.clientId || 'Sin asignar';
+                  if (!grouped[key]) grouped[key] = [];
+                  grouped[key].push(user);
+                }
+                return Object.entries(grouped).map(([groupName, groupUsers]) => (
+                  <div key={groupName}>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      {groupName}
+                    </h3>
+                    <div className="space-y-1.5">
+                      {groupUsers.map(user => (
+                        <div key={user.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">
+                              {user.displayName || user.email || 'Sin nombre'}
+                              {user.isAdmin && (
+                                <span className="ml-2 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">admin</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                          </div>
+                          <label className="flex items-center gap-2 text-xs cursor-pointer select-none ml-3 shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={user.enabled !== false}
+                              onChange={(e) => handleToggleUser(user.id, e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                            />
+                            {user.enabled !== false ? 'Habilitado' : 'Deshabilitado'}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No hay usuarios registrados aún</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
             Importar partidos desde JSON
           </CardTitle>
@@ -307,27 +364,10 @@ export default function Admin() {
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
             Importa los 72 partidos de la fase de grupos del Mundial 2026 desde el archivo <code>partidos.json</code>.
-            Los partidos de eliminación directa se agregan manualmente cuando se definan los clasificados.
+            Los partidos se comparten entre <strong>todos los clientes</strong> — no es necesario importar por cada uno.
           </p>
           <div className="flex items-end gap-3">
-            <div className="space-y-2 flex-1">
-              <Label>Cliente destino</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={importClientId}
-                onChange={(e) => setImportClientId(e.target.value)}
-                disabled={importing}
-              >
-                <option value="">Seleccionar cliente</option>
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <Button
-              onClick={() => handleImport(importClientId)}
-              disabled={!importClientId || importing}
-            >
+            <Button onClick={handleImport} disabled={importing}>
               {importing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -360,21 +400,6 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="clientId">Cliente</Label>
-              <Select
-                id="clientId"
-                name="clientId"
-                value={formData.clientId}
-                onChange={handleChange}
-              >
-                <option value="">Seleccionar cliente</option>
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </Select>
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="homeTeam">Equipo Local</Label>
@@ -478,7 +503,7 @@ export default function Admin() {
       </Card>
 
       <h2 className="text-xl font-semibold mb-4">Partidos Existentes ({matches.length})</h2>
-      
+
       {loading ? (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -508,11 +533,6 @@ export default function Admin() {
                     <div className="text-sm text-muted-foreground mt-1">
                       {format(new Date(match.date), "dd/MM/yyyy HH:mm")} - {match.group}
                     </div>
-                    {match.clientName && (
-                      <div className="text-xs text-muted-foreground/70 mt-0.5">
-                        Cliente: {match.clientName}
-                      </div>
-                    )}
                     {match.result && (
                       <div className="mt-1 text-sm font-medium text-primary">
                         Resultado: {match.result.homeScore} - {match.result.awayScore}
