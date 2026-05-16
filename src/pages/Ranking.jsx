@@ -32,7 +32,9 @@ export default function Ranking() {
       const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       const predictions = predictionsSnap.docs.map(d => d.data());
 
-      const usersData = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const usersData = usersSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(u => u.enabled !== false);
 
       const calculatedPoints = {};
       for (const pred of predictions) {
@@ -87,7 +89,7 @@ export default function Ranking() {
         <img src="/img/logo-sm.png" alt="Quiniela 2026" className="w-10 h-10 object-contain" />
         <div>
           <h1 className="text-3xl font-bold">Ranking</h1>
-          <p className="text-muted-foreground text-sm">Tabla de posiciones</p>
+          <p className="text-muted-foreground text-sm">{users.length} participantes habilitados</p>
         </div>
       </div>
 
