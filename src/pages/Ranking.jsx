@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent } from '../components/ui/Card';
@@ -22,6 +22,9 @@ export default function Ranking() {
 
   async function loadRanking() {
     try {
+      const clientSnap = await getDoc(doc(db, 'clients', currentUser.clientId));
+      const userControlEnabled = clientSnap.exists() && clientSnap.data().enableUserControl === true;
+
       const usersQuery = query(collection(db, 'users'), where('clientId', '==', currentUser.clientId));
       const usersSnap = await getDocs(usersQuery);
       const matchesQuery = query(collection(db, 'matches'));
@@ -34,7 +37,7 @@ export default function Ranking() {
 
       const usersData = usersSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.enabled !== false);
+        .filter(u => !userControlEnabled || u.enabled !== false);
 
       const calculatedPoints = {};
       for (const pred of predictions) {

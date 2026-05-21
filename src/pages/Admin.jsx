@@ -20,6 +20,7 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newClientName, setNewClientName] = useState('');
+  const [newClientUserControl, setNewClientUserControl] = useState(false);
   const [clientError, setClientError] = useState('');
   const [formData, setFormData] = useState({
     homeTeamCode: '',
@@ -115,9 +116,11 @@ export default function Admin() {
     try {
       await addDoc(collection(db, 'clients'), {
         name: newClientName.trim(),
+        enableUserControl: newClientUserControl,
         createdAt: new Date().toISOString()
       });
       setNewClientName('');
+      setNewClientUserControl(false);
       loadClients();
     } catch (error) {
       console.error('Error creando cliente:', error);
@@ -278,6 +281,15 @@ export default function Admin() {
               Crear
             </Button>
           </form>
+          <label className="flex items-center gap-2 text-sm mb-4 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={newClientUserControl}
+              onChange={(e) => setNewClientUserControl(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            Habilitar control de usuarios (habilitar/deshabilitar)
+          </label>
           {clientError && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md mb-4">
               {clientError}
@@ -310,12 +322,16 @@ export default function Admin() {
             <div className="space-y-4">
               {(() => {
                 const grouped = {};
+                const clientMap = Object.fromEntries(clients.map(c => [c.id, c]));
                 for (const user of users) {
                   const key = user.clientName || user.clientId || 'Sin asignar';
                   if (!grouped[key]) grouped[key] = [];
                   grouped[key].push(user);
                 }
-                return Object.entries(grouped).map(([groupName, groupUsers]) => (
+                return Object.entries(grouped).map(([groupName, groupUsers]) => {
+                  const client = clientMap[groupUsers[0]?.clientId];
+                  const hasUserControl = client?.enableUserControl === true;
+                  return (
                   <div key={groupName}>
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                       {groupName}
@@ -332,6 +348,7 @@ export default function Admin() {
                             </div>
                             <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                           </div>
+                          {hasUserControl && (
                           <label className="flex items-center gap-2 text-xs cursor-pointer select-none ml-3 shrink-0">
                             <input
                               type="checkbox"
@@ -341,11 +358,13 @@ export default function Admin() {
                             />
                             {user.enabled !== false ? 'Habilitado' : 'Deshabilitado'}
                           </label>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
-                ));
+                  );
+                });
               })()}
             </div>
           ) : (
