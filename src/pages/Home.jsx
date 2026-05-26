@@ -59,7 +59,7 @@ export default function Home() {
             Quiniela <span className="text-yellow-300">2026</span>
           </h1>
           <p className="text-xl text-yellow-100/80 font-medium mb-2">
-            FIFA World Cup 2026
+            Copa Mundial de Fútbol
           </p>
           <p className="text-lg text-white/60 mb-10 max-w-lg mx-auto">
             Predice los resultados del Mundial y compite con tus amigos
