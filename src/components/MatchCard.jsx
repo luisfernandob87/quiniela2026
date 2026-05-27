@@ -6,15 +6,18 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Label } from './ui/Label';
 import { calculatePoints } from '../utils/scoring';
+import { getCountryName, getFlagCode } from '../utils/countries';
 import { cn } from '../utils/cn';
 import { Star, CheckCircle, Lock, X, Save, Clock } from 'lucide-react';
 
 function getFlagUrl(code, size = 'w40') {
   if (!code) return '';
-  return `https://flagcdn.com/${size}/${code}.png`;
+  return `https://flagcdn.com/${size}/${getFlagCode(code)}.png`;
 }
 
 export default function MatchCard({ match, prediction, onUpdatePrediction, canPredict, hasPrediction }) {
+  const homeTeamName = getCountryName(match.homeTeamCode) || match.homeTeam;
+  const awayTeamName = getCountryName(match.awayTeamCode) || match.awayTeam;
   const [homeScore, setHomeScore] = useState(prediction?.homeScore || '');
   const [awayScore, setAwayScore] = useState(prediction?.awayScore || '');
   const [saved, setSaved] = useState(!!prediction);
@@ -92,10 +95,10 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <img
                   src={getFlagUrl(match.homeTeamCode, 'w80')}
-                  alt={match.homeTeam}
+                  alt={homeTeamName}
                   className="w-9 h-7 object-cover rounded shadow-sm flex-shrink-0 border border-gray-200"
                 />
-                <span className="font-bold text-sm truncate">{match.homeTeam}</span>
+                <span className="font-bold text-sm truncate">{homeTeamName}</span>
               </div>
               <div className="flex items-center gap-2 ml-2">
                 {hasResult ? (
@@ -124,10 +127,10 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <img
                   src={getFlagUrl(match.awayTeamCode, 'w80')}
-                  alt={match.awayTeam}
+                  alt={awayTeamName}
                   className="w-9 h-7 object-cover rounded shadow-sm flex-shrink-0 border border-gray-200"
                 />
-                <span className="font-bold text-sm truncate">{match.awayTeam}</span>
+                <span className="font-bold text-sm truncate">{awayTeamName}</span>
               </div>
               <div className="flex items-center gap-2 ml-2">
                 {hasResult ? (
@@ -156,10 +159,10 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
           {/* Desktop layout */}
           <div className="hidden sm:flex sm:items-center sm:justify-between sm:gap-6">
             <div className="flex-1 flex items-center justify-end gap-3">
-              <span className="font-bold text-lg text-right">{match.homeTeam}</span>
+              <span className="font-bold text-lg text-right">{homeTeamName}</span>
               <img
                 src={getFlagUrl(match.homeTeamCode, 'w80')}
-                alt={match.homeTeam}
+                alt={homeTeamName}
                 className="w-14 h-9 object-cover rounded shadow-md flex-shrink-0 border border-gray-200"
               />
             </div>
@@ -211,10 +214,10 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
             <div className="flex-1 flex items-center gap-3">
               <img
                 src={getFlagUrl(match.awayTeamCode, 'w80')}
-                alt={match.awayTeam}
+                alt={awayTeamName}
                 className="w-14 h-9 object-cover rounded shadow-md flex-shrink-0 border border-gray-200"
               />
-              <span className="font-bold text-lg">{match.awayTeam}</span>
+              <span className="font-bold text-lg">{awayTeamName}</span>
             </div>
           </div>
 
@@ -323,10 +326,10 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                 <div className="flex flex-col items-center gap-1.5">
                   <img
                     src={getFlagUrl(match.homeTeamCode, 'w80')}
-                    alt={match.homeTeam}
+                    alt={homeTeamName}
                     className="w-14 h-9 object-cover rounded shadow-sm border border-gray-600"
                   />
-                  <span className="font-semibold text-xs text-white">{match.homeTeam}</span>
+                  <span className="font-semibold text-xs text-white">{homeTeamName}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-700 text-white text-2xl font-black flex items-center justify-center shadow-md">
@@ -340,10 +343,10 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                 <div className="flex flex-col items-center gap-1.5">
                   <img
                     src={getFlagUrl(match.awayTeamCode, 'w80')}
-                    alt={match.awayTeam}
+                    alt={awayTeamName}
                     className="w-14 h-9 object-cover rounded shadow-sm border border-gray-600"
                   />
-                  <span className="font-semibold text-xs text-white">{match.awayTeam}</span>
+                  <span className="font-semibold text-xs text-white">{awayTeamName}</span>
                 </div>
               </div>
 

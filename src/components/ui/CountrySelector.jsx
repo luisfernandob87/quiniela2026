@@ -74,7 +74,7 @@ const countries = [
   { name: 'Cabo Verde', code: 'cv', en: 'Cape Verde' },
   { name: 'Congo', code: 'cd', en: 'DR Congo' },
   { name: 'Curaçao', code: 'cw' },
-  { name: 'Escocia', code: 'sco', en: 'Scotland' },
+  { name: 'Escocia', code: 'gb-sct', en: 'Scotland' },
   { name: 'Jordania', code: 'jo', en: 'Jordan' },
   { name: 'República Checa', code: 'cz', en: 'Czech Republic' },
 ].sort((a, b) => a.name.localeCompare(b.name, 'es'));

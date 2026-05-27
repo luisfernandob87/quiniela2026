@@ -1,5 +1,6 @@
 import { collection, doc, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import partidosData from '../data/partidos.json';
+import { getCountryName } from './countries';
 
 const TEAM_TO_CODE = {
   'Mexico': 'mx',
@@ -104,8 +105,8 @@ export async function importGroupMatches(db, onProgress) {
 
     const docRef = doc(collection(db, 'matches'));
     batch.set(docRef, {
-      homeTeam: match.team1,
-      awayTeam: match.team2,
+      homeTeam: getCountryName(homeTeamCode) || match.team1,
+      awayTeam: getCountryName(awayTeamCode) || match.team2,
       homeTeamCode,
       awayTeamCode,
       date: dateTime.toISOString(),

@@ -89,7 +89,6 @@ export default function Ranking() {
     <div className="max-w-5xl mx-auto px-4 py-8 animate-fadeInUp">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <img src="/img/logo-sm.png" alt="Quiniela 2026" className="w-10 h-10 object-contain" />
         <div>
           <h1 className="text-3xl font-bold">Ranking</h1>
           <p className="text-muted-foreground text-sm">{users.length} participantes habilitados</p>

@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Predictions from './pages/Predictions';
 import Admin from './pages/Admin';
 import Ranking from './pages/Ranking';
+import Groups from './pages/Groups';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -53,6 +54,14 @@ function AppContent() {
             element={
               <PrivateRoute>
                 <Ranking />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/groups"
+            element={
+              <PrivateRoute>
+                <Groups />
               </PrivateRoute>
             }
           />

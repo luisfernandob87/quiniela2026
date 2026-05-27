@@ -1,101 +1,34 @@
-export const countries = {
-  'mx': { name: 'México', flag: '🇲🇽' },
-  'us': { name: 'Estados Unidos', flag: '🇺🇸' },
-  'ca': { name: 'Canadá', flag: '🇨🇦' },
-  'ar': { name: 'Argentina', flag: '🇦🇷' },
-  'br': { name: 'Brasil', flag: '🇧🇷' },
-  'fr': { name: 'Francia', flag: '🇫🇷' },
-  'de': { name: 'Alemania', flag: '🇩🇪' },
-  'es': { name: 'España', flag: '🇪🇸' },
-  'gb': { name: 'Inglaterra', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  'pt': { name: 'Portugal', flag: '🇵🇹' },
-  'it': { name: 'Italia', flag: '🇮🇹' },
-  'nl': { name: 'Países Bajos', flag: '🇳🇱' },
-  'be': { name: 'Bélgica', flag: '🇧🇪' },
-  'hr': { name: 'Croacia', flag: '🇭🇷' },
-  'uy': { name: 'Uruguay', flag: '🇺🇾' },
-  'co': { name: 'Colombia', flag: '🇨🇴' },
-  'cl': { name: 'Chile', flag: '🇨🇱' },
-  'jp': { name: 'Japón', flag: '🇯🇵' },
-  'kr': { name: 'Corea del Sur', flag: '🇰🇷' },
-  'au': { name: 'Australia', flag: '🇦🇺' },
-  'ma': { name: 'Marruecos', flag: '🇲🇦' },
-  'sn': { name: 'Senegal', flag: '🇸🇳' },
-  'ng': { name: 'Nigeria', flag: '🇳🇬' },
-  'cm': { name: 'Camerún', flag: '🇨🇲' },
-  'eg': { name: 'Egipto', flag: '🇪🇬' },
-  'tn': { name: 'Túnez', flag: '🇹🇳' },
-  'dz': { name: 'Argelia', flag: '🇩🇿' },
-  'cr': { name: 'Costa Rica', flag: '🇨🇷' },
-  'pa': { name: 'Panamá', flag: '🇵🇦' },
-  'hn': { name: 'Honduras', flag: '🇭🇳' },
-  'jm': { name: 'Jamaica', flag: '🇯🇲' },
-  'ec': { name: 'Ecuador', flag: '🇪🇨' },
-  'pe': { name: 'Perú', flag: '🇵🇪' },
-  'py': { name: 'Paraguay', flag: '🇵🇾' },
-  've': { name: 'Venezuela', flag: '🇻🇪' },
-  'bo': { name: 'Bolivia', flag: '🇧🇴' },
-  'sa': { name: 'Arabia Saudita', flag: '🇸🇦' },
-  'ir': { name: 'Irán', flag: '🇮🇷' },
-  'qa': { name: 'Qatar', flag: '🇶🇦' },
-  'iq': { name: 'Irak', flag: '🇮🇶' },
-  'ae': { name: 'Emiratos Árabes', flag: '🇦🇪' },
-  'cn': { name: 'China', flag: '🇨🇳' },
-  'in': { name: 'India', flag: '🇮🇳' },
-  'uz': { name: 'Uzbekistán', flag: '🇺🇿' },
-  'za': { name: 'Sudáfrica', flag: '🇿🇦' },
-  'gh': { name: 'Ghana', flag: '🇬🇭' },
-  'ci': { name: 'Costa de Marfil', flag: '🇨🇮' },
-  'ml': { name: 'Mali', flag: '🇲🇱' },
-  'bf': { name: 'Burkina Faso', flag: '🇧🇫' },
-  'cv': { name: 'Cabo Verde', flag: '🇨🇻' },
-  'ch': { name: 'Suiza', flag: '🇨🇭' },
-  'at': { name: 'Austria', flag: '🇦🇹' },
-  'dk': { name: 'Dinamarca', flag: '🇩🇰' },
-  'se': { name: 'Suecia', flag: '🇸🇪' },
-  'no': { name: 'Noruega', flag: '🇳🇴' },
-  'sco': { name: 'Escocia', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
-  'wal': { name: 'Gales', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
-  'tr': { name: 'Turquía', flag: '🇹🇷' },
-  'pl': { name: 'Polonia', flag: '🇵🇱' },
-  'cz': { name: 'República Checa', flag: '🇨🇿' },
-  'rs': { name: 'Serbia', flag: '🇷🇸' },
-  'hu': { name: 'Hungría', flag: '🇭🇺' },
-  'ro': { name: 'Rumanía', flag: '🇷🇴' },
-  'ua': { name: 'Ucrania', flag: '🇺🇦' },
-  'ru': { name: 'Rusia', flag: '🇷🇺' },
-  'si': { name: 'Eslovenia', flag: '🇸🇮' },
-  'al': { name: 'Albania', flag: '🇦🇱' },
-  'ge': { name: 'Georgia', flag: '🇬🇪' },
-  'gr': { name: 'Grecia', flag: '🇬🇷' },
-  'nz': { name: 'Nueva Zelanda', flag: '🇳🇿' },
-  'ht': { name: 'Haití', flag: '🇭🇹' },
-  'tt': { name: 'Trinidad y Tobago', flag: '🇹🇹' },
-  'sv': { name: 'El Salvador', flag: '🇸🇻' },
-  'gt': { name: 'Guatemala', flag: '🇬🇹' },
-  'cw': { name: 'Curazao', flag: '🇨🇼' },
-  'tz': { name: 'Tanzania', flag: '🇹🇿' },
-  'zm': { name: 'Zambia', flag: '🇿🇲' },
-  'cd': { name: 'Congo', flag: '🇨🇩' },
-  'gn': { name: 'Guinea', flag: '🇬🇳' },
-  'ga': { name: 'Gabón', flag: '🇬🇦' },
-  'ba': { name: 'Bosnia & Herzegovina', flag: '🇧🇦' },
-  'jo': { name: 'Jordania', flag: '🇯🇴' },
-  'gb-sct': { name: 'Escocia', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+const COUNTRY_NAMES = {
+  af: 'Afganistán', al: 'Albania', de: 'Alemania', sa: 'Arabia Saudita', dz: 'Argelia',
+  ar: 'Argentina', au: 'Australia', at: 'Austria', be: 'Bélgica', ba: 'Bosnia & Herzegovina',
+  bo: 'Bolivia', br: 'Brasil', cm: 'Camerún', ca: 'Canadá', qa: 'Catar',
+  cl: 'Chile', cn: 'China', co: 'Colombia', cd: 'Congo', kr: 'Corea del Sur',
+  ci: 'Costa de Marfil', cr: 'Costa Rica', hr: 'Croacia', cw: 'Curaçao',
+  dk: 'Dinamarca', ec: 'Ecuador', eg: 'Egipto', sv: 'El Salvador',
+  ae: 'Emiratos Árabes', 'gb-sct': 'Escocia', sco: 'Escocia', es: 'España', us: 'Estados Unidos',
+  fr: 'Francia', wls: 'Gales', gh: 'Ghana', gt: 'Guatemala', ht: 'Haití',
+  hn: 'Honduras', 'gb-eng': 'Inglaterra', iq: 'Irak', ir: 'Irán',
+  ie: 'Irlanda', 'gb-nir': 'Irlanda del Norte', is: 'Islandia', it: 'Italia',
+  jm: 'Jamaica', jp: 'Japón', jo: 'Jordania', ma: 'Marruecos', mx: 'México',
+  ng: 'Nigeria', no: 'Noruega', nz: 'Nueva Zelanda', nl: 'Países Bajos',
+  pa: 'Panamá', py: 'Paraguay', pe: 'Perú', pl: 'Polonia', pt: 'Portugal',
+  ro: 'Rumania', ru: 'Rusia', sn: 'Senegal', rs: 'Serbia', za: 'Sudáfrica',
+  se: 'Suecia', ch: 'Suiza', tn: 'Túnez', tr: 'Turquía', ua: 'Ucrania',
+  uy: 'Uruguay', uz: 'Uzbekistán', cv: 'Cabo Verde', cz: 'República Checa',
 };
 
-export function getCountry(code) {
-  if (!code) return { name: 'Desconocido', flag: '⚽' };
-  const c = countries[code.toLowerCase()];
-  return c || { name: code.toUpperCase(), flag: '⚽' };
+const FLAG_OVERRIDES = {
+  sco: 'gb-sct',
+};
+
+export function getCountryName(code) {
+  if (!code) return '';
+  return COUNTRY_NAMES[code] || code;
 }
 
-export function getCountryOptions() {
-  return Object.entries(countries)
-    .sort((a, b) => a[1].name.localeCompare(b[1].name, 'es'))
-    .map(([code, { name, flag }]) => ({
-      code,
-      label: `${flag} ${name}`,
-      value: code
-    }));
+export function getFlagCode(code) {
+  if (!code) return 'xx';
+  return FLAG_OVERRIDES[code] || code;
 }
+
+export default COUNTRY_NAMES;

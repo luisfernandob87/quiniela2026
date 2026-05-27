@@ -9,6 +9,7 @@ import { Label } from '../components/ui/Label';
 import { Select } from '../components/ui/Select';
 import CountrySelector from '../components/ui/CountrySelector';
 import { recalculateAllPoints } from '../utils/scoring';
+import { getCountryName, getFlagCode } from '../utils/countries';
 import { importGroupMatches, hasExistingMatches } from '../utils/importMatches';
 import { Trash2, Plus, Save, RefreshCw, X, Building2, Upload, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -41,25 +42,6 @@ export default function Admin() {
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importError, setImportError] = useState('');
   const [importSuccess, setImportSuccess] = useState('');
-
-  const countryNames = {
-    af: 'Afganistán', al: 'Albania', de: 'Alemania', sa: 'Arabia Saudita', dz: 'Argelia',
-    ar: 'Argentina', au: 'Australia', at: 'Austria', be: 'Bélgica', bo: 'Bolivia',
-    br: 'Brasil', cm: 'Camerún', ca: 'Canadá', qa: 'Catar', cl: 'Chile', cn: 'China',
-    co: 'Colombia', kr: 'Corea del Sur', ci: 'Costa de Marfil', cr: 'Costa Rica',
-    hr: 'Croacia', dk: 'Dinamarca', ec: 'Ecuador', eg: 'Egipto', sv: 'El Salvador',
-    ae: 'Emiratos Árabes', es: 'España', us: 'Estados Unidos', fr: 'Francia',
-    wls: 'Gales', gh: 'Ghana', gt: 'Guatemala', ht: 'Haití', hn: 'Honduras',
-    'gb-eng': 'Inglaterra', iq: 'Irak', ir: 'Irán', ie: 'Irlanda', 'gb-nir': 'Irlanda del Norte',
-    is: 'Islandia', it: 'Italia', jm: 'Jamaica', jp: 'Japón', ma: 'Marruecos',
-    mx: 'México', ng: 'Nigeria', no: 'Noruega', nz: 'Nueva Zelanda', nl: 'Países Bajos',
-    pa: 'Panamá', py: 'Paraguay', pe: 'Perú', pl: 'Polonia', pt: 'Portugal',
-    ro: 'Rumania', ru: 'Rusia', sn: 'Senegal', rs: 'Serbia', za: 'Sudáfrica',
-    se: 'Suecia', ch: 'Suiza', tn: 'Túnez', tr: 'Turquía', ua: 'Ucrania',
-    uy: 'Uruguay', uz: 'Uzbekistán',
-    ba: 'Bosnia & Herzegovina', jo: 'Jordania', cz: 'República Checa',
-    sco: 'Escocia', cv: 'Cabo Verde', cd: 'Congo', cw: 'Curaçao'
-  };
 
   const groups = [
     'Grupo A', 'Grupo B', 'Grupo C', 'Grupo D', 'Grupo E', 'Grupo F',
@@ -135,8 +117,8 @@ export default function Admin() {
     try {
       const dateTime = new Date(`${formData.date}T${formData.time}`);
       await addDoc(collection(db, 'matches'), {
-        homeTeam: countryNames[formData.homeTeamCode] || formData.homeTeamCode,
-        awayTeam: countryNames[formData.awayTeamCode] || formData.awayTeamCode,
+        homeTeam: getCountryName(formData.homeTeamCode) || formData.homeTeamCode,
+        awayTeam: getCountryName(formData.awayTeamCode) || formData.awayTeamCode,
         homeTeamCode: formData.homeTeamCode,
         awayTeamCode: formData.awayTeamCode,
         date: dateTime.toISOString(),
@@ -536,16 +518,16 @@ export default function Admin() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 font-semibold">
                       <img
-                        src={`https://flagcdn.com/w40/${match.homeTeamCode || 'xx'}.png`}
-                        alt={match.homeTeam}
+                        src={`https://flagcdn.com/w40/${getFlagCode(match.homeTeamCode) || 'xx'}.png`}
+                        alt={getCountryName(match.homeTeamCode) || match.homeTeam}
                         className="w-8 h-5 object-cover rounded shadow-sm"
                       />
-                      <span>{match.homeTeam}</span>
+                      <span>{getCountryName(match.homeTeamCode) || match.homeTeam}</span>
                       <span className="text-muted-foreground text-sm">vs</span>
-                      <span>{match.awayTeam}</span>
+                      <span>{getCountryName(match.awayTeamCode) || match.awayTeam}</span>
                       <img
-                        src={`https://flagcdn.com/w40/${match.awayTeamCode || 'xx'}.png`}
-                        alt={match.awayTeam}
+                        src={`https://flagcdn.com/w40/${getFlagCode(match.awayTeamCode) || 'xx'}.png`}
+                        alt={getCountryName(match.awayTeamCode) || match.awayTeam}
                         className="w-8 h-5 object-cover rounded shadow-sm"
                       />
                     </div>
@@ -602,26 +584,26 @@ export default function Admin() {
               <div className="flex items-center justify-center gap-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <img
-                    src={`https://flagcdn.com/w40/${modalMatch.homeTeamCode || 'xx'}.png`}
-                    alt={modalMatch.homeTeam}
+                    src={`https://flagcdn.com/w40/${getFlagCode(modalMatch.homeTeamCode) || 'xx'}.png`}
+                    alt={getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}
                     className="w-14 h-10 object-cover rounded shadow-sm"
                   />
-                  <span className="font-semibold text-sm">{modalMatch.homeTeam}</span>
+                  <span className="font-semibold text-sm">{getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}</span>
                 </div>
                 <span className="text-2xl font-bold text-muted-foreground">vs</span>
                 <div className="flex flex-col items-center gap-2">
                   <img
-                    src={`https://flagcdn.com/w40/${modalMatch.awayTeamCode || 'xx'}.png`}
-                    alt={modalMatch.awayTeam}
+                    src={`https://flagcdn.com/w40/${getFlagCode(modalMatch.awayTeamCode) || 'xx'}.png`}
+                    alt={getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}
                     className="w-14 h-10 object-cover rounded shadow-sm"
                   />
-                  <span className="font-semibold text-sm">{modalMatch.awayTeam}</span>
+                  <span className="font-semibold text-sm">{getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-center block">{modalMatch.homeTeam}</Label>
+                  <Label className="text-sm font-medium text-center block">{getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}</Label>
                   <Input
                     type="number"
                     min="0"
@@ -632,7 +614,7 @@ export default function Admin() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-center block">{modalMatch.awayTeam}</Label>
+                  <Label className="text-sm font-medium text-center block">{getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}</Label>
                   <Input
                     type="number"
                     min="0"
@@ -657,7 +639,7 @@ export default function Admin() {
                     variant="destructive"
                     className="flex-1"
                     onClick={() => {
-                      if (!window.confirm(`¿Eliminar el resultado de ${modalMatch.homeTeam} vs ${modalMatch.awayTeam}?`)) return;
+                      if (!window.confirm(`¿Eliminar el resultado de ${getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam} vs ${getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}?`)) return;
                       clearResult(modalMatch.id);
                       setModalOpen(false);
                     }}
@@ -673,9 +655,11 @@ export default function Admin() {
                       ? `${modalMatch.result.homeScore}-${modalMatch.result.awayScore}`
                       : '—';
                     const newScore = `${modalHomeScore || '0'}-${modalAwayScore || '0'}`;
+                    const hTeam = getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam;
+                    const aTeam = getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam;
                     const msg = isEditingResult
-                      ? `¿Estás seguro de cambiar el resultado de ${modalMatch.homeTeam} vs ${modalMatch.awayTeam}?\n\nAnterior: ${prevScore}\nNuevo: ${newScore}`
-                      : `¿Registrar resultado de ${modalMatch.homeTeam} vs ${modalMatch.awayTeam}?\n\n${newScore}`;
+                      ? `¿Estás seguro de cambiar el resultado de ${hTeam} vs ${aTeam}?\n\nAnterior: ${prevScore}\nNuevo: ${newScore}`
+                      : `¿Registrar resultado de ${hTeam} vs ${aTeam}?\n\n${newScore}`;
                     if (!window.confirm(msg)) return;
                     updateResult(modalMatch.id, modalHomeScore, modalAwayScore);
                     setModalOpen(false);

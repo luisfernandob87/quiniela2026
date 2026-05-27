@@ -70,6 +70,9 @@ export default function Navbar() {
                 <Link to="/predictions" className="text-white/80 hover:text-white transition-colors text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-white/10">
                   Predicciones
                 </Link>
+                <Link to="/groups" className="text-white/80 hover:text-white transition-colors text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-white/10">
+                  Grupos
+                </Link>
                 <Link to="/ranking" className="text-white/80 hover:text-white transition-colors text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-white/10">
                   Ranking
                 </Link>
@@ -122,6 +125,9 @@ export default function Navbar() {
           <div className="md:hidden pb-4 pt-2 space-y-1 border-t border-white/10 animate-fadeInUp">
             <Link to="/predictions" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
               Predicciones
+            </Link>
+            <Link to="/groups" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+              Grupos
             </Link>
             <Link to="/ranking" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
               Ranking
