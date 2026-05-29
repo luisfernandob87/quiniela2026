@@ -46,6 +46,7 @@ export default function Admin() {
   const [importSuccess, setImportSuccess] = useState('');
   const [toggleConfirm, setToggleConfirm] = useState(null);
   const [managerConfirm, setManagerConfirm] = useState(null);
+  const [toggleError, setToggleError] = useState('');
 
   const groups = [
     'Grupo A', 'Grupo B', 'Grupo C', 'Grupo D', 'Grupo E', 'Grupo F',
@@ -186,8 +187,12 @@ export default function Admin() {
     try {
       await updateDoc(doc(db, 'users', userId), { enabled });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, enabled } : u));
+      setToggleError('');
     } catch (error) {
       console.error('Error actualizando usuario:', error);
+      setToggleError('Error al actualizar: ' + (error.code === 'permission-denied'
+        ? 'permiso denegado — las reglas de Firestore no permiten esta acción'
+        : error.message));
     }
   }
 
@@ -359,21 +364,19 @@ export default function Admin() {
                               </label>
                             )}
                             {hasUserControl && (canManageUsers || isFullAdmin) && (
-                            <div className="flex items-center gap-2">
-                              <label
-                                onClick={() => setToggleConfirm({ userId: user.id, userName: user.displayName || user.email, enabled: user.enabled !== false })}
-                                className="flex items-center gap-2 text-xs cursor-pointer select-none"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={user.enabled !== false}
-                                  className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 pointer-events-none"
-                                  readOnly
-                                />
-                                <span className={`text-xs font-medium ${user.enabled !== false ? 'text-green-600' : 'text-red-500'}`}>
-                                  {user.enabled !== false ? 'Habilitado' : 'Deshabilitado'}
-                                </span>
-                              </label>
+                            <div
+                              onClick={() => setToggleConfirm({ userId: user.id, userName: user.displayName || user.email, enabled: user.enabled !== false })}
+                              className="flex items-center gap-2 cursor-pointer select-none"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={user.enabled !== false}
+                                className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 pointer-events-none"
+                                readOnly
+                              />
+                              <span className={`text-xs font-medium ${user.enabled !== false ? 'text-green-600' : 'text-red-500'}`}>
+                                {user.enabled !== false ? 'Habilitado' : 'Deshabilitado'}
+                              </span>
                             </div>
                             )}
                           </div>
@@ -719,6 +722,11 @@ export default function Admin() {
         </div>
       )}
       </>
+      )}
+      {toggleError && (
+        <div className="mb-4 p-3 bg-red-900/50 border border-red-700 text-red-200 text-sm rounded-lg">
+          {toggleError}
+        </div>
       )}
       {toggleConfirm && (
         <div
