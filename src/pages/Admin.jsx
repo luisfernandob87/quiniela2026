@@ -16,6 +16,8 @@ import { format } from 'date-fns';
 
 export default function Admin() {
   const { currentUser } = useAuth();
+  const isFullAdmin = currentUser?.isAdmin === true;
+  const canManageUsers = currentUser?.canManageUsers === true;
   const [matches, setMatches] = useState([]);
   const [clients, setClients] = useState([]);
   const [users, setUsers] = useState([]);
@@ -42,6 +44,8 @@ export default function Admin() {
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importError, setImportError] = useState('');
   const [importSuccess, setImportSuccess] = useState('');
+  const [toggleConfirm, setToggleConfirm] = useState(null);
+  const [managerConfirm, setManagerConfirm] = useState(null);
 
   const groups = [
     'Grupo A', 'Grupo B', 'Grupo C', 'Grupo D', 'Grupo E', 'Grupo F',
@@ -224,7 +228,7 @@ export default function Admin() {
     }
   }
 
-  if (!currentUser?.isAdmin) {
+  if (!isFullAdmin && !canManageUsers) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-bold text-red-600">Acceso denegado</h1>
@@ -236,13 +240,16 @@ export default function Admin() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Administrar Partidos</h1>
+        <h1 className="text-2xl font-bold">{canManageUsers ? 'Gestión de Usuarios' : 'Administrar Partidos'}</h1>
+        {isFullAdmin && (
         <Button variant="outline" size="sm" onClick={handleRecalculate}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Recalcular puntos
         </Button>
+        )}
       </div>
 
+      {isFullAdmin && (
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -291,12 +298,13 @@ export default function Admin() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
-            Usuarios por Cliente
+            Usuarios por Quiniela
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -306,6 +314,7 @@ export default function Admin() {
                 const grouped = {};
                 const clientMap = Object.fromEntries(clients.map(c => [c.id, c]));
                 for (const user of users) {
+                  if (canManageUsers && !isFullAdmin && user.clientId !== currentUser?.clientId) continue;
                   const key = user.clientName || user.clientId || 'Sin asignar';
                   if (!grouped[key]) grouped[key] = [];
                   grouped[key].push(user);
@@ -327,20 +336,47 @@ export default function Admin() {
                               {user.isAdmin && (
                                 <span className="ml-2 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">admin</span>
                               )}
+                              {user.canManageUsers && (
+                                <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">gestor</span>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                           </div>
-                          {hasUserControl && (
-                          <label className="flex items-center gap-2 text-xs cursor-pointer select-none ml-3 shrink-0">
-                            <input
-                              type="checkbox"
-                              checked={user.enabled !== false}
-                              onChange={(e) => handleToggleUser(user.id, e.target.checked)}
-                              className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                            />
-                            {user.enabled !== false ? 'Habilitado' : 'Deshabilitado'}
-                          </label>
-                          )}
+                          <div className="flex items-center gap-3 shrink-0 ml-3">
+                            {isFullAdmin && (
+                              <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={user.canManageUsers === true}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setManagerConfirm({ userId: user.id, userName: user.displayName || user.email, canManageUsers: user.canManageUsers !== true });
+                                  }}
+                                  className="h-3.5 w-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-400 pointer-events-none"
+                                  readOnly
+                                />
+                                <span className="text-muted-foreground">Gestor</span>
+                              </label>
+                            )}
+                            {hasUserControl && (canManageUsers || isFullAdmin) && (
+                            <div className="flex items-center gap-2">
+                              <label
+                                onClick={() => setToggleConfirm({ userId: user.id, userName: user.displayName || user.email, enabled: user.enabled !== false })}
+                                className="flex items-center gap-2 text-xs cursor-pointer select-none"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={user.enabled !== false}
+                                  className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 pointer-events-none"
+                                  readOnly
+                                />
+                                <span className={`text-xs font-medium ${user.enabled !== false ? 'text-green-600' : 'text-red-500'}`}>
+                                  {user.enabled !== false ? 'Habilitado' : 'Deshabilitado'}
+                                </span>
+                              </label>
+                            </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -355,6 +391,7 @@ export default function Admin() {
         </CardContent>
       </Card>
 
+      {isFullAdmin && (
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -394,7 +431,9 @@ export default function Admin() {
           )}
         </CardContent>
       </Card>
+      )}
 
+      {isFullAdmin && (
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Agregar Nuevo Partido</CardTitle>
@@ -502,7 +541,10 @@ export default function Admin() {
           </form>
         </CardContent>
       </Card>
+      )}
 
+      {isFullAdmin && (
+      <>
       <h2 className="text-xl font-semibold mb-4">Partidos Existentes ({matches.length})</h2>
 
       {loading ? (
@@ -569,58 +611,61 @@ export default function Admin() {
         </div>
       )}
       {modalOpen && modalMatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg border bg-card text-card-foreground shadow-lg w-full max-w-md mx-4 overflow-hidden">
-            <div className="flex items-center justify-between p-6 pb-2">
-              <h2 className="text-xl font-bold">{isEditingResult ? 'Editar Resultado' : 'Registrar Resultado'}</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
+        >
+          <div className="rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-5 pb-2">
+              <h2 className="text-xl font-bold text-white">{isEditingResult ? 'Editar Resultado' : 'Registrar Resultado'}</h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-1 rounded-full hover:bg-muted transition-colors"
+                className="p-1 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 pt-4 space-y-6">
+            <div className="p-5 pt-3 space-y-6">
               <div className="flex items-center justify-center gap-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <img
                     src={`https://flagcdn.com/w40/${getFlagCode(modalMatch.homeTeamCode) || 'xx'}.png`}
                     alt={getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}
-                    className="w-14 h-10 object-cover rounded shadow-sm"
+                    className="w-14 h-10 object-cover rounded shadow-sm border border-gray-600"
                   />
-                  <span className="font-semibold text-sm">{getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}</span>
+                  <span className="font-semibold text-sm text-white">{getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}</span>
                 </div>
-                <span className="text-2xl font-bold text-muted-foreground">vs</span>
+                <span className="text-2xl font-bold text-gray-400">vs</span>
                 <div className="flex flex-col items-center gap-2">
                   <img
                     src={`https://flagcdn.com/w40/${getFlagCode(modalMatch.awayTeamCode) || 'xx'}.png`}
                     alt={getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}
-                    className="w-14 h-10 object-cover rounded shadow-sm"
+                    className="w-14 h-10 object-cover rounded shadow-sm border border-gray-600"
                   />
-                  <span className="font-semibold text-sm">{getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}</span>
+                  <span className="font-semibold text-sm text-white">{getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-center block">{getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}</Label>
+                  <Label className="text-sm font-medium text-center block text-gray-300">{getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam}</Label>
                   <Input
                     type="number"
                     min="0"
                     value={modalHomeScore}
                     onChange={(e) => setModalHomeScore(e.target.value)}
-                    className="text-center text-2xl h-16"
+                    className="text-center text-2xl h-16 bg-gray-700 border-gray-600 text-white placeholder:text-gray-500"
                     placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-center block">{getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}</Label>
+                  <Label className="text-sm font-medium text-center block text-gray-300">{getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}</Label>
                   <Input
                     type="number"
                     min="0"
                     value={modalAwayScore}
                     onChange={(e) => setModalAwayScore(e.target.value)}
-                    className="text-center text-2xl h-16"
+                    className="text-center text-2xl h-16 bg-gray-700 border-gray-600 text-white placeholder:text-gray-500"
                     placeholder="0"
                   />
                 </div>
@@ -629,7 +674,7 @@ export default function Admin() {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 text-white border-white/30 hover:bg-white/10"
                   onClick={() => setModalOpen(false)}
                 >
                   Cancelar
@@ -637,7 +682,7 @@ export default function Admin() {
                 {isEditingResult && (
                   <Button
                     variant="destructive"
-                    className="flex-1"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                     onClick={() => {
                       if (!window.confirm(`¿Eliminar el resultado de ${getCountryName(modalMatch.homeTeamCode) || modalMatch.homeTeam} vs ${getCountryName(modalMatch.awayTeamCode) || modalMatch.awayTeam}?`)) return;
                       clearResult(modalMatch.id);
@@ -667,6 +712,96 @@ export default function Admin() {
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {isEditingResult ? 'Actualizar' : 'Guardar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+      {toggleConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => { if (e.target === e.currentTarget) setToggleConfirm(null); }}
+        >
+          <div className="rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-5 pb-2">
+              <h2 className="text-lg font-bold text-white">Confirmar cambio</h2>
+              <button
+                onClick={() => setToggleConfirm(null)}
+                className="p-1 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 pt-3 space-y-5">
+              <p className="text-sm text-gray-300 text-center">
+                ¿Estás seguro de {toggleConfirm.enabled ? 'deshabilitar' : 'habilitar'} a <strong className="text-white">{toggleConfirm.userName}</strong>?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 text-white border-white/30 hover:bg-white/10"
+                  onClick={() => setToggleConfirm(null)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    handleToggleUser(toggleConfirm.userId, !toggleConfirm.enabled);
+                    setToggleConfirm(null);
+                  }}
+                >
+                  {toggleConfirm.enabled ? 'Deshabilitar' : 'Habilitar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {managerConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => { if (e.target === e.currentTarget) setManagerConfirm(null); }}
+        >
+          <div className="rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-5 pb-2">
+              <h2 className="text-lg font-bold text-white">Confirmar permiso</h2>
+              <button
+                onClick={() => setManagerConfirm(null)}
+                className="p-1 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 pt-3 space-y-5">
+              <p className="text-sm text-gray-300 text-center">
+                ¿Estás seguro de {managerConfirm.canManageUsers ? 'asignar' : 'quitar'} permisos de gestor a <strong className="text-white">{managerConfirm.userName}</strong>?
+              </p>
+              <p className="text-xs text-gray-400 text-center">
+                {managerConfirm.canManageUsers
+                  ? 'Podrá habilitar/deshabilitar usuarios de su cliente.'
+                  : 'Ya no podrá habilitar/deshabilitar usuarios.'}
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 text-white border-white/30 hover:bg-white/10"
+                  onClick={() => setManagerConfirm(null)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={async () => {
+                    await updateDoc(doc(db, 'users', managerConfirm.userId), { canManageUsers: managerConfirm.canManageUsers });
+                    setUsers(prev => prev.map(u => u.id === managerConfirm.userId ? { ...u, canManageUsers: managerConfirm.canManageUsers } : u));
+                    setManagerConfirm(null);
+                  }}
+                >
+                  {managerConfirm.canManageUsers ? 'Asignar' : 'Quitar'}
                 </Button>
               </div>
             </div>

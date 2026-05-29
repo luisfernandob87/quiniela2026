@@ -76,7 +76,7 @@ export default function Navbar() {
                 <Link to="/ranking" className="text-white/80 hover:text-white transition-colors text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-white/10">
                   Ranking
                 </Link>
-                {currentUser.isAdmin && (
+                {(currentUser.isAdmin || currentUser.canManageUsers) && (
                   <Link to="/admin" className="text-white/80 hover:text-white transition-colors text-sm font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-white/10">
                     <Shield className="w-4 h-4" />
                     Admin
@@ -132,7 +132,7 @@ export default function Navbar() {
             <Link to="/ranking" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
               Ranking
             </Link>
-            {currentUser.isAdmin && (
+            {(currentUser.isAdmin || currentUser.canManageUsers) && (
               <Link to="/admin" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                 <Shield className="w-4 h-4 inline mr-1" />
                 Admin
