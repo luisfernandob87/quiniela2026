@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { collection, addDoc, deleteDoc, doc, getDocs, query, orderBy, updateDoc } from 'firebase/firestore';
+import { useState } from 'react';
+import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
+import { useMatches, useClients, useAllUsers, useInvalidate } from '../hooks/useFirestoreQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -18,10 +19,13 @@ export default function Admin() {
   const { currentUser } = useAuth();
   const isFullAdmin = currentUser?.isAdmin === true;
   const canManageUsers = currentUser?.canManageUsers === true;
-  const [matches, setMatches] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidate();
+
+  const { data: matches = [], isLoading: matchesLoading } = useMatches();
+  const { data: clients = [] } = useClients();
+  const { data: users = [], isLoading: usersLoading } = useAllUsers();
+  const loading = matchesLoading || usersLoading;
+
   const [newClientName, setNewClientName] = useState('');
   const [newClientUserControl, setNewClientUserControl] = useState(false);
   const [clientError, setClientError] = useState('');
@@ -54,44 +58,6 @@ export default function Admin() {
     'Dieciseisavos de Final', 'Octavos de Final', 'Cuartos de Final', 'Semifinales', 'Tercer Lugar', 'Final'
   ];
 
-  useEffect(() => {
-    loadClients();
-    loadMatches();
-    loadUsers();
-  }, []);
-
-  async function loadClients() {
-    try {
-      const snapshot = await getDocs(collection(db, 'clients'));
-      setClients(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-    }
-  }
-
-  async function loadUsers() {
-    try {
-      const snapshot = await getDocs(collection(db, 'users'));
-      const usersData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      usersData.sort((a, b) => a.displayName?.localeCompare(b.displayName) || 0);
-      setUsers(usersData);
-    } catch (error) {
-      console.error('Error cargando usuarios:', error);
-    }
-  }
-
-  async function loadMatches() {
-    try {
-      const q = query(collection(db, 'matches'), orderBy('date'));
-      const snapshot = await getDocs(q);
-      setMatches(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (error) {
-      console.error('Error cargando partidos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
@@ -108,7 +74,7 @@ export default function Admin() {
       });
       setNewClientName('');
       setNewClientUserControl(false);
-      loadClients();
+      invalidate(['clients']);
     } catch (error) {
       console.error('Error creando cliente:', error);
       setClientError(error.message);
@@ -141,7 +107,7 @@ export default function Admin() {
       }
       setFormData({ homeTeamCode: '', awayTeamCode: '', date: '', time: '', group: '', homeScore: '', awayScore: '' });
       setHasResult(false);
-      loadMatches();
+      invalidate(['matches']);
     } catch (error) {
       console.error('Error agregando partido:', error);
     }
@@ -151,7 +117,7 @@ export default function Admin() {
     if (!window.confirm('¿Estás seguro de eliminar este partido?')) return;
     try {
       await deleteDoc(doc(db, 'matches', id));
-      loadMatches();
+      invalidate(['matches']);
     } catch (error) {
       console.error('Error eliminando partido:', error);
     }
@@ -165,7 +131,7 @@ export default function Admin() {
       for (const client of clients) {
         await recalculateAllPoints(db, client.id);
       }
-      loadMatches();
+      invalidate(['matches']);
     } catch (error) {
       console.error('Error actualizando resultado:', error);
     }
@@ -177,7 +143,7 @@ export default function Admin() {
       for (const client of clients) {
         await recalculateAllPoints(db, client.id);
       }
-      loadMatches();
+      invalidate(['matches']);
     } catch (error) {
       console.error('Error eliminando resultado:', error);
     }
@@ -186,7 +152,7 @@ export default function Admin() {
   async function handleToggleUser(userId, enabled) {
     try {
       await updateDoc(doc(db, 'users', userId), { enabled });
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, enabled } : u));
+      invalidate(['users']);
       setToggleError('');
     } catch (error) {
       console.error('Error actualizando usuario:', error);
@@ -224,7 +190,7 @@ export default function Admin() {
         setImportProgress({ current, total });
       });
       setImportSuccess(`Se importaron ${total} partidos de la fase de grupos correctamente.`);
-      loadMatches();
+      invalidate(['matches']);
     } catch (error) {
       console.error('Error importando partidos:', error);
       setImportError(error.message);
@@ -805,7 +771,7 @@ export default function Admin() {
                   className="flex-1"
                   onClick={async () => {
                     await updateDoc(doc(db, 'users', managerConfirm.userId), { canManageUsers: managerConfirm.canManageUsers });
-                    setUsers(prev => prev.map(u => u.id === managerConfirm.userId ? { ...u, canManageUsers: managerConfirm.canManageUsers } : u));
+                    invalidate(['users']);
                     setManagerConfirm(null);
                   }}
                 >

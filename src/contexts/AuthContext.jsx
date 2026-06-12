@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { 
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -66,12 +66,12 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     currentUser,
     signup,
     login,
     logout
-  };
+  }), [currentUser, signup, login, logout]);
 
   return (
     <AuthContext.Provider value={value}>

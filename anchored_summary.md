@@ -31,6 +31,10 @@ Build a quiniela (World Cup 2026 prediction) app with role-based admin access (s
 - Fix enable/disable toggle for gestor users: moved `onClick` from `<label>` to outer `<div>` to avoid mobile browser label-input interaction that prevented the confirmation modal from opening
 - Fix enable/disable for gestores toggling OTHER users (not just themselves): added Firestore security rules (`firestore.rules`) allowing gestores to update `enabled` field of users in the same client; added user-friendly error banner when `updateDoc` fails with permission error
 - Created `firebase.json` referencing rules file
+- TanStack React Query integration: added `@tanstack/react-query`, created `src/hooks/useFirestoreQueries.js` with centralized query hooks (`useMatches`, `useClients`, `useAllUsers`, `useUsersByClient`, `usePredictionsByUser`, `usePredictionsByClient`, `useClientDoc`), wrapped app with `QueryClientProvider`, refactored all 6 pages to use hooks → eliminates redundant reads across page navigations
+- AuthContext context value wrapped in `useMemo` to stabilize `currentUser` reference across renders
+- After mutations (predictions, user toggle, client create, match create/delete/result), queries are invalidated via `invalidateQueries` instead of manual state updates
+- Match predictions page (`/match/:matchId`): shows all user predictions for a given match. Uses already-cached data (no extra reads). Eye icon button added to MatchCard header. Correct predictions highlighted with stars/points
 
 ### In Progress
 - (none)
@@ -39,6 +43,8 @@ Build a quiniela (World Cup 2026 prediction) app with role-based admin access (s
 - (none)
 
 ## Key Decisions
+- **React Query for caching:** `getDocs` calls replaced with `useQuery` hooks. `staleTime: 5min` for matches/clients, `30s` for predictions/users. Cache deduplicates requests — if two pages mount simultaneously, only one Firestore read happens. Data is served from cache during page navigation for up to 5 minutes.
+- **Country names centralized:**
 - **Country names centralized:** One `getCountryName(code)` function – all display goes through it
 - **User control is per-client:** `enableUserControl` stored on client doc, checked at runtime
 - **Container queries for responsive table:** `@container` + `@max-[479px]:hidden` on extra columns instead of viewport breakpoints, so narrow cards auto-compact even on desktop
@@ -47,6 +53,7 @@ Build a quiniela (World Cup 2026 prediction) app with role-based admin access (s
 
 ## Next Steps
 - Deploy Firestore rules: run `firebase deploy --only firestore` or copy rules into Firebase Console > Firestore > Rules
+- Monitor Firestore read counts before/after React Query to validate reduction
 
 ## Critical Context
 - The enable/disable toggle for gestors uses `onClick` on a `<div>` (not `<label>`) to avoid mobile browser label-input interaction issues
@@ -59,6 +66,9 @@ Build a quiniela (World Cup 2026 prediction) app with role-based admin access (s
 - `firebase.json` references rules for CLI deployment
 
 ## Relevant Files
+- `src/hooks/useFirestoreQueries.js`: Centralized React Query hooks for all Firestore collections
+- `src/main.jsx`: App wrapped with `QueryClientProvider`
+- `src/contexts/AuthContext.jsx`: `useMemo` on context value for stable `currentUser`
 - `src/utils/countries.js`: `getCountryName()`, `getFlagCode()` with Scottish code mapping
 - `src/pages/Groups.jsx`: standings table with container-query responsive columns
 - `src/pages/Admin.jsx`: admin panel – role-based sections (client creation, gestor assignment, user enable/disable via confirmation modal, match management)

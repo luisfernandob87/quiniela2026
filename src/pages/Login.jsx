@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
+import { useClients } from '../hooks/useFirestoreQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -16,24 +15,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [clientId, setClientId] = useState('');
-  const [clients, setClients] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, signup } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  async function loadClients() {
-    try {
-      const snapshot = await getDocs(collection(db, 'clients'));
-      setClients(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-    }
-  }
+  const { data: clients = [] } = useClients();
 
   const hasClients = clients.length > 0;
 

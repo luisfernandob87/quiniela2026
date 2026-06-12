@@ -1,66 +1,30 @@
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs, getDoc, doc, setDoc, where } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
+import { useMatches, useClientDoc, usePredictionsByUser, useInvalidate } from '../hooks/useFirestoreQueries';
 import MatchCard from '../components/MatchCard';
 import { Select } from '../components/ui/Select';
 import { calculatePoints } from '../utils/scoring';
 
 export default function Predictions() {
-  const [matches, setMatches] = useState([]);
-  const [predictions, setPredictions] = useState({});
-  const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth();
   const [filter, setFilter] = useState('all');
   const [pendingOnly, setPendingOnly] = useState(false);
   const [clock, setClock] = useState(Date.now());
-  const [userControlEnabled, setUserControlEnabled] = useState(false);
-  const { currentUser } = useAuth();
+  const invalidate = useInvalidate();
 
   useEffect(() => {
     const interval = setInterval(() => setClock(Date.now()), 10000);
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (!currentUser?.clientId) {
-      setLoading(false);
-      return;
-    }
-    loadMatches();
-  }, [currentUser]);
+  const { data: matches = [], isLoading: matchesLoading } = useMatches();
+  const { data: client } = useClientDoc(currentUser?.clientId);
+  const { data: predictions = {}, isLoading: predsLoading } = usePredictionsByUser(currentUser?.uid);
 
-  async function loadMatches() {
-    try {
-      if (currentUser?.clientId) {
-        const clientSnap = await getDoc(doc(db, 'clients', currentUser.clientId));
-        if (clientSnap.exists()) {
-          setUserControlEnabled(clientSnap.data().enableUserControl === true);
-        }
-      }
-      const q = query(collection(db, 'matches'));
-      const snapshot = await getDocs(q);
-      const matchesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMatches(matchesData);
-      await loadPredictions(matchesData);
-    } catch (error) {
-      console.error('Error cargando partidos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadPredictions(matchesData) {
-    if (!currentUser) return;
-    try {
-      const predQuery = query(collection(db, 'predictions'), where('userId', '==', currentUser.uid));
-      const predSnapshot = await getDocs(predQuery);
-      const preds = {};
-      predSnapshot.forEach(d => { preds[d.data().matchId] = d.data(); });
-      setPredictions(preds);
-    } catch (error) {
-      console.error('Error cargando predicciones:', error);
-    }
-  }
+  const userControlEnabled = client?.enableUserControl === true;
+  const loading = matchesLoading || predsLoading;
 
   async function handleUpdatePrediction(matchId, prediction) {
     if (!currentUser) return;
@@ -91,7 +55,7 @@ export default function Predictions() {
         clientId: currentUser.clientId,
         updatedAt: new Date().toISOString()
       });
-      setPredictions(prev => ({ ...prev, [matchId]: prediction }));
+      invalidate(['predictions', 'user', currentUser.uid]);
     } catch (error) {
       console.error('Error guardando predicción:', error);
     }

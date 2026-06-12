@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc, query, where } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useMatches, useClientDoc, useUsersByClient, usePredictionsByClient } from '../hooks/useFirestoreQueries';
 import { Card, CardContent } from '../components/ui/Card';
 import { Trophy, Medal, Crown, Star } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -9,61 +8,30 @@ import { calculatePoints } from '../utils/scoring';
 
 export default function Ranking() {
   const { currentUser } = useAuth();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: client } = useClientDoc(currentUser?.clientId);
+  const { data: matches = [], isLoading: matchesLoading } = useMatches();
+  const { data: usersData = [], isLoading: usersLoading } = useUsersByClient(currentUser?.clientId);
+  const { data: predictions = [], isLoading: predsLoading } = usePredictionsByClient(currentUser?.clientId);
 
-  useEffect(() => {
-    if (!currentUser?.clientId) {
-      setLoading(false);
-      return;
+  const userControlEnabled = client?.enableUserControl === true;
+  const loading = matchesLoading || usersLoading || predsLoading || !currentUser?.clientId;
+
+  const users = useMemo(() => {
+    const enabled = usersData.filter(u => !userControlEnabled || u.enabled !== false);
+
+    const calculatedPoints = {};
+    for (const pred of predictions) {
+      const match = matches.find(m => m.id === pred.matchId);
+      if (!match || !match.result || match.result.homeScore === null) continue;
+      const points = calculatePoints(pred, match.result);
+      if (!calculatedPoints[pred.userId]) calculatedPoints[pred.userId] = 0;
+      calculatedPoints[pred.userId] += points;
     }
-    loadRanking();
-  }, [currentUser]);
 
-  async function loadRanking() {
-    try {
-      const clientSnap = await getDoc(doc(db, 'clients', currentUser.clientId));
-      const userControlEnabled = clientSnap.exists() && clientSnap.data().enableUserControl === true;
-
-      const usersQuery = query(collection(db, 'users'), where('clientId', '==', currentUser.clientId));
-      const usersSnap = await getDocs(usersQuery);
-      const matchesQuery = query(collection(db, 'matches'));
-      const matchesSnap = await getDocs(matchesQuery);
-      const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
-      const predictionsSnap = await getDocs(predictionsQuery);
-
-      const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const predictions = predictionsSnap.docs.map(d => d.data());
-
-      const usersData = usersSnap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => !userControlEnabled || u.enabled !== false);
-
-      const calculatedPoints = {};
-      for (const pred of predictions) {
-        const match = matches.find(m => m.id === pred.matchId);
-        if (!match || !match.result || match.result.homeScore === null) continue;
-
-        const points = calculatePoints(pred, match.result);
-        if (!calculatedPoints[pred.userId]) calculatedPoints[pred.userId] = 0;
-        calculatedPoints[pred.userId] += points;
-      }
-
-      const usersWithPoints = usersData.map(u => ({
-        ...u,
-        points: calculatedPoints[u.id] || 0
-      }));
-
-      usersWithPoints.sort((a, b) => b.points - a.points);
-
-      const ranked = usersWithPoints.map((u, i) => ({ ...u, rank: i + 1 }));
-      setUsers(ranked);
-    } catch (error) {
-      console.error('Error cargando ranking:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+    const withPoints = enabled.map(u => ({ ...u, points: calculatedPoints[u.id] || 0 }));
+    withPoints.sort((a, b) => b.points - a.points);
+    return withPoints.map((u, i) => ({ ...u, rank: i + 1 }));
+  }, [usersData, predictions, matches, userControlEnabled]);
 
   function getMedal(rank) {
     if (rank === 1) return { icon: Crown, color: 'text-yellow-400', bg: 'bg-yellow-400', label: 'Oro' };

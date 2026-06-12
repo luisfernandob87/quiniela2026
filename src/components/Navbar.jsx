@@ -1,47 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
+import { useMatches, usePredictionsByClient } from '../hooks/useFirestoreQueries';
 import { Button } from './ui/Button';
 import { LogOut, User, Shield, Trophy, Menu, X } from 'lucide-react';
 import { calculatePoints } from '../utils/scoring';
 
 export default function Navbar() {
   const { currentUser, logout } = useAuth();
-  const [livePoints, setLivePoints] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { data: matches = [] } = useMatches();
+  const { data: predictions = [] } = usePredictionsByClient(currentUser?.clientId);
 
-  useEffect(() => {
-    if (!currentUser) return;
-    loadLivePoints();
-  }, [currentUser]);
-
-  async function loadLivePoints() {
-    if (!currentUser?.clientId) return;
-    try {
-      const matchesQuery = query(collection(db, 'matches'));
-      const matchesSnap = await getDocs(matchesQuery);
-      const predictionsQuery = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
-      const predictionsSnap = await getDocs(predictionsQuery);
-
-      const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const predictions = predictionsSnap.docs.map(d => d.data());
-      const myPreds = predictions.filter(p => p.userId === currentUser.uid);
-
-      let total = 0;
-      for (const pred of myPreds) {
-        const match = matches.find(m => m.id === pred.matchId);
-        if (match && match.result && match.result.homeScore !== null) {
-          total += calculatePoints(pred, match.result);
-        }
+  const livePoints = useMemo(() => {
+    if (!currentUser?.clientId) return 0;
+    const myPreds = predictions.filter(p => p.userId === currentUser.uid);
+    let total = 0;
+    for (const pred of myPreds) {
+      const match = matches.find(m => m.id === pred.matchId);
+      if (match && match.result && match.result.homeScore !== null) {
+        total += calculatePoints(pred, match.result);
       }
-      setLivePoints(total);
-    } catch (error) {
-      console.error('Error cargando puntos:', error);
     }
-  }
+    return total;
+  }, [matches, predictions, currentUser]);
 
   async function handleLogout() {
     try {

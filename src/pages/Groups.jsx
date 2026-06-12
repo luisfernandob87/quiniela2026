@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { useMemo } from 'react';
+import { useMatches } from '../hooks/useFirestoreQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { getCountryName, getFlagCode } from '../utils/countries';
 
@@ -60,25 +59,11 @@ function computeStandings(matches) {
 }
 
 export default function Groups() {
-  const [groups, setGroups] = useState({});
-  const [loading, setLoading] = useState(true);
+  const { data: matches = [], isLoading: loading } = useMatches();
 
-  useEffect(() => {
-    loadGroups();
-  }, []);
-
-  async function loadGroups() {
-    try {
-      const matchesSnap = await getDocs(collection(db, 'matches'));
-      const matches = matchesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const computed = computeStandings(matches);
-      setGroups(computed);
-    } catch (error) {
-      console.error('Error cargando grupos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const groups = useMemo(() => {
+    return computeStandings(matches);
+  }, [matches]);
 
   if (loading) {
     return (

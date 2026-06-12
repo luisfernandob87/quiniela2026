@@ -8,6 +8,7 @@ import Predictions from './pages/Predictions';
 import Admin from './pages/Admin';
 import Ranking from './pages/Ranking';
 import Groups from './pages/Groups';
+import MatchPredictions from './pages/MatchPredictions';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -62,6 +63,14 @@ function AppContent() {
             element={
               <PrivateRoute>
                 <Groups />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/match/:matchId"
+            element={
+              <PrivateRoute>
+                <MatchPredictions />
               </PrivateRoute>
             }
           />

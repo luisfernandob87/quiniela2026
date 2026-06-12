@@ -8,7 +8,8 @@ import { Label } from './ui/Label';
 import { calculatePoints } from '../utils/scoring';
 import { getCountryName, getFlagCode } from '../utils/countries';
 import { cn } from '../utils/cn';
-import { Star, CheckCircle, Lock, X, Save, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Star, CheckCircle, Lock, X, Save, Clock, Eye } from 'lucide-react';
 
 function getFlagUrl(code, size = 'w40') {
   if (!code) return '';
@@ -80,6 +81,16 @@ export default function MatchCard({ match, prediction, onUpdatePrediction, canPr
                 )}>
                   {isExpired ? 'Cerrado' : 'Abierto'}
                 </span>
+              )}
+              {(hasResult || isExpired) && (
+                <Link
+                  to={`/match/${match.id}`}
+                  className="ml-1.5 p-1 rounded hover:bg-white/20 transition-colors"
+                  title="Ver pronósticos de todos"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </Link>
               )}
             </span>
             <span className="opacity-80 text-white/70">
