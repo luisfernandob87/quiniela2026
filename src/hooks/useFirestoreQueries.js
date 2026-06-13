@@ -2,13 +2,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, query, orderBy, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
-const staleTimes = {
-  matches: 5 * 60 * 1000,
-  predictions: 30 * 1000,
-  users: 30 * 1000,
-  clients: 5 * 60 * 1000,
-};
-
 export function useInvalidate() {
   const qc = useQueryClient();
   return (keys) => qc.invalidateQueries({ queryKey: keys });
@@ -22,8 +15,8 @@ export function useMatches() {
       const snapshot = await getDocs(q);
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     },
-    staleTime: staleTimes.matches,
-    gcTime: 30 * 60 * 1000,
+    staleTime: Infinity,
+    gcTime: 60 * 60 * 1000,
   });
 }
 
@@ -34,8 +27,8 @@ export function useClients() {
       const snapshot = await getDocs(collection(db, 'clients'));
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     },
-    staleTime: staleTimes.clients,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 }
 
@@ -47,8 +40,8 @@ export function useClientDoc(clientId) {
       return snap.exists() ? { id: snap.id, ...snap.data() } : null;
     },
     enabled: !!clientId,
-    staleTime: staleTimes.clients,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 }
 
@@ -61,8 +54,8 @@ export function useUsersByClient(clientId) {
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     },
     enabled: !!clientId,
-    staleTime: staleTimes.users,
-    gcTime: 30 * 60 * 1000,
+    staleTime: Infinity,
+    gcTime: 60 * 60 * 1000,
   });
 }
 
@@ -75,23 +68,7 @@ export function useAllUsers() {
       data.sort((a, b) => a.displayName?.localeCompare(b.displayName) || 0);
       return data;
     },
-    staleTime: staleTimes.users,
-    gcTime: 30 * 60 * 1000,
-  });
-}
-
-export function usePredictionsByUser(userId) {
-  return useQuery({
-    queryKey: ['predictions', 'user', userId],
-    queryFn: async () => {
-      const q = query(collection(db, 'predictions'), where('userId', '==', userId));
-      const snapshot = await getDocs(q);
-      const preds = {};
-      snapshot.forEach(d => { preds[d.data().matchId] = d.data(); });
-      return preds;
-    },
-    enabled: !!userId,
-    staleTime: staleTimes.predictions,
+    staleTime: 30 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 }
@@ -105,7 +82,7 @@ export function usePredictionsByClient(clientId) {
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     },
     enabled: !!clientId,
-    staleTime: staleTimes.predictions,
-    gcTime: 30 * 60 * 1000,
+    staleTime: Infinity,
+    gcTime: 60 * 60 * 1000,
   });
 }

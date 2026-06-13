@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
-import { useMatches, useClientDoc, usePredictionsByUser, useInvalidate } from '../hooks/useFirestoreQueries';
+import { useMatches, useClientDoc, usePredictionsByClient, useInvalidate } from '../hooks/useFirestoreQueries';
 import MatchCard from '../components/MatchCard';
 import { Select } from '../components/ui/Select';
 import { calculatePoints } from '../utils/scoring';
@@ -21,7 +21,10 @@ export default function Predictions() {
 
   const { data: matches = [], isLoading: matchesLoading } = useMatches();
   const { data: client } = useClientDoc(currentUser?.clientId);
-  const { data: predictions = {}, isLoading: predsLoading } = usePredictionsByUser(currentUser?.uid);
+  const { data: allPredictions = [], isLoading: predsLoading } = usePredictionsByClient(currentUser?.clientId);
+  const predictions = Object.fromEntries(
+    allPredictions.filter(p => p.userId === currentUser?.uid).map(p => [p.matchId, p])
+  );
 
   const userControlEnabled = client?.enableUserControl === true;
   const loading = matchesLoading || predsLoading;
@@ -55,7 +58,7 @@ export default function Predictions() {
         clientId: currentUser.clientId,
         updatedAt: new Date().toISOString()
       });
-      invalidate(['predictions', 'user', currentUser.uid]);
+      invalidate(['predictions', 'client', currentUser.clientId]);
     } catch (error) {
       console.error('Error guardando predicción:', error);
     }
