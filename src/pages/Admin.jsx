@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
-import { useMatches, useClients, useAllUsers, useInvalidate } from '../hooks/useFirestoreQueries';
+import { useMatches, useClients, useUsersByClient, useInvalidate } from '../hooks/useFirestoreQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -23,8 +23,21 @@ export default function Admin() {
 
   const { data: matches = [], isLoading: matchesLoading } = useMatches();
   const { data: clients = [] } = useClients();
-  const { data: users = [], isLoading: usersLoading } = useAllUsers();
-  const loading = matchesLoading || usersLoading;
+  const { data: clientUsers = [] } = useUsersByClient(!isFullAdmin ? currentUser?.clientId : null);
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    if (!isFullAdmin) return;
+    const unsub = onSnapshot(collection(db, 'users'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => a.displayName?.localeCompare(b.displayName) || 0);
+      setAllUsers(data);
+    });
+    return () => unsub();
+  }, [isFullAdmin]);
+
+  const users = isFullAdmin ? allUsers : clientUsers;
+  const loading = matchesLoading;
 
   const [newClientName, setNewClientName] = useState('');
   const [newClientUserControl, setNewClientUserControl] = useState(false);
@@ -107,7 +120,6 @@ export default function Admin() {
       }
       setFormData({ homeTeamCode: '', awayTeamCode: '', date: '', time: '', group: '', homeScore: '', awayScore: '' });
       setHasResult(false);
-      invalidate(['matches']);
     } catch (error) {
       console.error('Error agregando partido:', error);
     }
@@ -117,7 +129,6 @@ export default function Admin() {
     if (!window.confirm('¿Estás seguro de eliminar este partido?')) return;
     try {
       await deleteDoc(doc(db, 'matches', id));
-      invalidate(['matches']);
     } catch (error) {
       console.error('Error eliminando partido:', error);
     }
@@ -131,7 +142,6 @@ export default function Admin() {
       for (const client of clients) {
         await recalculateAllPoints(db, client.id);
       }
-      invalidate(['matches']);
     } catch (error) {
       console.error('Error actualizando resultado:', error);
     }
@@ -143,7 +153,6 @@ export default function Admin() {
       for (const client of clients) {
         await recalculateAllPoints(db, client.id);
       }
-      invalidate(['matches']);
     } catch (error) {
       console.error('Error eliminando resultado:', error);
     }
@@ -152,7 +161,6 @@ export default function Admin() {
   async function handleToggleUser(userId, enabled) {
     try {
       await updateDoc(doc(db, 'users', userId), { enabled });
-      invalidate(['users']);
       setToggleError('');
     } catch (error) {
       console.error('Error actualizando usuario:', error);
@@ -190,7 +198,6 @@ export default function Admin() {
         setImportProgress({ current, total });
       });
       setImportSuccess(`Se importaron ${total} partidos de la fase de grupos correctamente.`);
-      invalidate(['matches']);
     } catch (error) {
       console.error('Error importando partidos:', error);
       setImportError(error.message);
@@ -771,7 +778,6 @@ export default function Admin() {
                   className="flex-1"
                   onClick={async () => {
                     await updateDoc(doc(db, 'users', managerConfirm.userId), { canManageUsers: managerConfirm.canManageUsers });
-                    invalidate(['users']);
                     setManagerConfirm(null);
                   }}
                 >

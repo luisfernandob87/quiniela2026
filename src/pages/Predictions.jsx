@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
-import { useMatches, useClientDoc, usePredictionsByClient, useInvalidate } from '../hooks/useFirestoreQueries';
+import { useMatches, useClientDoc, usePredictionsByClient } from '../hooks/useFirestoreQueries';
+import { useQueryClient } from '@tanstack/react-query';
 import MatchCard from '../components/MatchCard';
 import { Select } from '../components/ui/Select';
 import { calculatePoints } from '../utils/scoring';
@@ -12,7 +13,7 @@ export default function Predictions() {
   const [filter, setFilter] = useState('all');
   const [pendingOnly, setPendingOnly] = useState(false);
   const [clock, setClock] = useState(Date.now());
-  const invalidate = useInvalidate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const interval = setInterval(() => setClock(Date.now()), 10000);
@@ -50,15 +51,17 @@ export default function Predictions() {
         return;
       }
 
-      const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
-      await setDoc(predRef, {
-        ...prediction,
-        userId: currentUser.uid,
-        matchId,
-        clientId: currentUser.clientId,
-        updatedAt: new Date().toISOString()
+      const predDocId = `${currentUser.uid}_${matchId}`;
+      const predRef = doc(db, 'predictions', predDocId);
+      const newData = { ...prediction, userId: currentUser.uid, matchId, clientId: currentUser.clientId, updatedAt: new Date().toISOString() };
+      await setDoc(predRef, newData);
+      queryClient.setQueryData(['predictions', 'client', currentUser.clientId], (old) => {
+        if (!old) return old;
+        const existing = old.find(p => p.id === predDocId);
+        return existing
+          ? old.map(p => p.id === predDocId ? { id: predDocId, ...newData } : p)
+          : [...old, { id: predDocId, ...newData }];
       });
-      invalidate(['predictions', 'client', currentUser.clientId]);
     } catch (error) {
       console.error('Error guardando predicción:', error);
     }

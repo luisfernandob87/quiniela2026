@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { collection, query, orderBy, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
@@ -19,6 +19,12 @@ export default function RealtimeProvider({ children }) {
     }));
 
     if (currentUser.clientId) {
+      const clientDocRef = doc(db, 'clients', currentUser.clientId);
+      unsubs.push(onSnapshot(clientDocRef, (snap) => {
+        queryClient.setQueryData(['clients', currentUser.clientId],
+          snap.exists() ? { id: snap.id, ...snap.data() } : null);
+      }));
+
       const predQ = query(collection(db, 'predictions'), where('clientId', '==', currentUser.clientId));
       unsubs.push(onSnapshot(predQ, (snap) => {
         queryClient.setQueryData(['predictions', 'client', currentUser.clientId], snap.docs.map(d => ({ id: d.id, ...d.data() })));
