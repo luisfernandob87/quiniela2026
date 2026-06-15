@@ -12,7 +12,7 @@ import CountrySelector from '../components/ui/CountrySelector';
 
 import { getCountryName, getFlagCode } from '../utils/countries';
 import { importGroupMatches, hasExistingMatches } from '../utils/importMatches';
-import { Trash2, Plus, Save, X, Building2, Upload, FileDown } from 'lucide-react';
+import { Trash2, Plus, Save, X, Building2, Upload, FileDown, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Admin() {
@@ -25,16 +25,18 @@ export default function Admin() {
   const { data: clients = [] } = useClients();
   const { data: clientUsers = [] } = useUsersByClient(!isFullAdmin ? currentUser?.clientId : null);
   const [allUsers, setAllUsers] = useState([]);
+  const [usersExpanded, setUsersExpanded] = useState(false);
+  const [clientsExpanded, setClientsExpanded] = useState(false);
 
   useEffect(() => {
-    if (!isFullAdmin) return;
+    if (!isFullAdmin || !usersExpanded) return;
     const unsub = onSnapshot(collection(db, 'users'), (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       data.sort((a, b) => a.displayName?.localeCompare(b.displayName) || 0);
       setAllUsers(data);
     });
     return () => unsub();
-  }, [isFullAdmin]);
+  }, [isFullAdmin, usersExpanded]);
 
   const users = isFullAdmin ? allUsers : clientUsers;
   const loading = matchesLoading;
@@ -200,12 +202,19 @@ export default function Admin() {
 
       {isFullAdmin && (
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            Clientes
+        <CardHeader
+          className="cursor-pointer select-none"
+          onClick={() => setClientsExpanded(!clientsExpanded)}
+        >
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Clientes
+            </div>
+            <ChevronDown className={`w-5 h-5 transition-transform ${clientsExpanded ? '' : '-rotate-90'}`} />
           </CardTitle>
         </CardHeader>
+        {clientsExpanded && (
         <CardContent>
           <form onSubmit={handleCreateClient} className="flex gap-2 mb-4">
             <Input
@@ -246,16 +255,24 @@ export default function Admin() {
             <p className="text-sm text-muted-foreground">No hay clientes creados aún</p>
           )}
         </CardContent>
+        )}
       </Card>
       )}
 
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            Usuarios por Quiniela
+        <CardHeader
+          className="cursor-pointer select-none"
+          onClick={() => setUsersExpanded(!usersExpanded)}
+        >
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Usuarios por Quiniela
+            </div>
+            <ChevronDown className={`w-5 h-5 transition-transform ${usersExpanded ? '' : '-rotate-90'}`} />
           </CardTitle>
         </CardHeader>
+        {usersExpanded && (
         <CardContent>
           {users.length > 0 ? (
             <div className="space-y-4">
@@ -336,6 +353,7 @@ export default function Admin() {
             <p className="text-sm text-muted-foreground">No hay usuarios registrados aún</p>
           )}
         </CardContent>
+        )}
       </Card>
 
       {isFullAdmin && (
