@@ -5,7 +5,7 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocFromCache, collection, getDocs, query, limit } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const AuthContext = createContext();
@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
   async function signup(email, password, displayName, clientId, clientName) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    const usersSnap = await getDocs(collection(db, 'users'));
+    const usersSnap = await getDocs(query(collection(db, 'users'), limit(1)));
     const isFirstUser = usersSnap.empty;
     const userData = {
       email: user.email,
@@ -49,7 +49,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDocFromCache(userRef).catch(() => getDoc(userRef));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           if (userData.enabled === undefined) userData.enabled = true;

@@ -9,10 +9,10 @@ import { Button } from '../components/ui/Button';
 import { Label } from '../components/ui/Label';
 import { Select } from '../components/ui/Select';
 import CountrySelector from '../components/ui/CountrySelector';
-import { recalculateAllPoints } from '../utils/scoring';
+
 import { getCountryName, getFlagCode } from '../utils/countries';
 import { importGroupMatches, hasExistingMatches } from '../utils/importMatches';
-import { Trash2, Plus, Save, RefreshCw, X, Building2, Upload, FileDown } from 'lucide-react';
+import { Trash2, Plus, Save, X, Building2, Upload, FileDown } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Admin() {
@@ -113,11 +113,6 @@ export default function Admin() {
           : null,
         createdAt: new Date().toISOString()
       });
-      if (hasResult) {
-        for (const client of clients) {
-          await recalculateAllPoints(db, client.id);
-        }
-      }
       setFormData({ homeTeamCode: '', awayTeamCode: '', date: '', time: '', group: '', homeScore: '', awayScore: '' });
       setHasResult(false);
     } catch (error) {
@@ -139,9 +134,6 @@ export default function Admin() {
       await updateDoc(doc(db, 'matches', matchId), {
         result: { homeScore: parseInt(homeScore) || 0, awayScore: parseInt(awayScore) || 0 }
       });
-      for (const client of clients) {
-        await recalculateAllPoints(db, client.id);
-      }
     } catch (error) {
       console.error('Error actualizando resultado:', error);
     }
@@ -150,9 +142,6 @@ export default function Admin() {
   async function clearResult(matchId) {
     try {
       await updateDoc(doc(db, 'matches', matchId), { result: null });
-      for (const client of clients) {
-        await recalculateAllPoints(db, client.id);
-      }
     } catch (error) {
       console.error('Error eliminando resultado:', error);
     }
@@ -167,18 +156,6 @@ export default function Admin() {
       setToggleError('Error al actualizar: ' + (error.code === 'permission-denied'
         ? 'permiso denegado — las reglas de Firestore no permiten esta acción'
         : error.message));
-    }
-  }
-
-  async function handleRecalculate() {
-    if (!window.confirm('¿Recalcular todos los puntos de los usuarios?')) return;
-    try {
-      for (const client of clients) {
-        await recalculateAllPoints(db, client.id);
-      }
-      alert('Puntos recalculados correctamente');
-    } catch (error) {
-      console.error('Error recalculando puntos:', error);
     }
   }
 
@@ -219,12 +196,6 @@ export default function Admin() {
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{canManageUsers ? 'Gestión de Usuarios' : 'Administrar Partidos'}</h1>
-        {isFullAdmin && (
-        <Button variant="outline" size="sm" onClick={handleRecalculate}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Recalcular puntos
-        </Button>
-        )}
       </div>
 
       {isFullAdmin && (
