@@ -85,3 +85,27 @@ export function usePredictionsByClient(clientId) {
     gcTime: 60 * 60 * 1000,
   });
 }
+
+export function useAllUsers() {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const snapshot = await cachedQuery(collection(db, 'users'));
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+    staleTime: Infinity,
+    gcTime: 60 * 60 * 1000,
+  });
+}
+
+export function useAllPredictions() {
+  return useQuery({
+    queryKey: ['predictions'],
+    queryFn: async () => {
+      const snapshot = await cachedQuery(collection(db, 'predictions'));
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+    staleTime: Infinity,
+    gcTime: 60 * 60 * 1000,
+  });
+}

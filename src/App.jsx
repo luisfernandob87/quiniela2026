@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Predictions from './pages/Predictions';
 import Admin from './pages/Admin';
 import Ranking from './pages/Ranking';
+import Reports from './pages/Reports';
 import Groups from './pages/Groups';
 import MatchPredictions from './pages/MatchPredictions';
 
@@ -56,6 +57,14 @@ function AppContent() {
             element={
               <PrivateRoute>
                 <Ranking />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <PrivateRoute>
+                <Reports />
               </PrivateRoute>
             }
           />

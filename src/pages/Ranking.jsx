@@ -1,20 +1,24 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMatches, useClientDoc, useUsersByClient, usePredictionsByClient } from '../hooks/useFirestoreQueries';
+import { useMatches, useClients, useClientDoc, useUsersByClient, usePredictionsByClient } from '../hooks/useFirestoreQueries';
 import { Card, CardContent } from '../components/ui/Card';
-import { Trophy, Medal, Crown, Star } from 'lucide-react';
+import { Trophy, Medal, Crown, Star, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { calculatePoints } from '../utils/scoring';
 
 export default function Ranking() {
   const { currentUser } = useAuth();
-  const { data: client } = useClientDoc(currentUser?.clientId);
+  const canViewAllClients = currentUser?.isAdmin === true && !currentUser?.clientId;
+  const { data: allClients = [] } = useClients();
+  const [selectedClientId, setSelectedClientId] = useState();
+  const effectiveClientId = selectedClientId || currentUser?.clientId || (canViewAllClients ? allClients[0]?.id : undefined);
+  const { data: client } = useClientDoc(effectiveClientId);
   const { data: matches = [], isLoading: matchesLoading } = useMatches();
-  const { data: usersData = [], isLoading: usersLoading } = useUsersByClient(currentUser?.clientId);
-  const { data: predictions = [], isLoading: predsLoading } = usePredictionsByClient(currentUser?.clientId);
+  const { data: usersData = [], isLoading: usersLoading } = useUsersByClient(effectiveClientId);
+  const { data: predictions = [], isLoading: predsLoading } = usePredictionsByClient(effectiveClientId);
 
   const userControlEnabled = client?.enableUserControl === true;
-  const loading = matchesLoading || usersLoading || predsLoading || !currentUser?.clientId;
+  const loading = matchesLoading || usersLoading || predsLoading || !effectiveClientId;
 
   const users = useMemo(() => {
     const enabled = usersData.filter(u => !userControlEnabled || u.enabled !== false);
@@ -57,10 +61,29 @@ export default function Ranking() {
     <div className="max-w-5xl mx-auto px-4 py-8 animate-fadeInUp">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold">Ranking</h1>
-          <p className="text-muted-foreground text-sm">{users.length} participantes habilitados</p>
+          <p className="text-muted-foreground text-sm">
+            {canViewAllClients && client ? `${client.name || client.id} — ` : ''}
+            {users.length} participantes habilitados
+          </p>
         </div>
+        {canViewAllClients && allClients.length > 1 && (
+          <div className="relative">
+            <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <select
+              value={effectiveClientId || ''}
+              onChange={(e) => setSelectedClientId(e.target.value)}
+              className="pl-9 pr-4 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+            >
+              {allClients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name || c.id}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Podium for top 3 */}
