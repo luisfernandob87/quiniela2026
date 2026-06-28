@@ -6,11 +6,37 @@ import { Trophy, Medal, Crown, Star, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { calculatePoints } from '../utils/scoring';
 
+const PHASES = [
+  { id: 'general', label: 'General' },
+  { id: 'grupos', label: 'Fase de Grupos' },
+  { id: 'dieciseisavos', label: 'Dieciseisavos' },
+  { id: 'octavos', label: 'Octavos' },
+  { id: 'cuartos', label: 'Cuartos' },
+  { id: 'semifinales', label: 'Semifinales' },
+  { id: 'tercer_lugar', label: 'Tercer Lugar' },
+  { id: 'final', label: 'Final' },
+];
+
+function matchInPhase(match, phaseId) {
+  if (phaseId === 'general') return true;
+  if (phaseId === 'grupos') return match.group?.startsWith('Grupo');
+  const phaseMap = {
+    dieciseisavos: 'Dieciseisavos de Final',
+    octavos: 'Octavos de Final',
+    cuartos: 'Cuartos de Final',
+    semifinales: 'Semifinales',
+    tercer_lugar: 'Tercer Lugar',
+    final: 'Final',
+  };
+  return match.group === phaseMap[phaseId];
+}
+
 export default function Ranking() {
   const { currentUser } = useAuth();
   const canViewAllClients = currentUser?.isAdmin === true && !currentUser?.clientId;
   const { data: allClients = [] } = useClients();
   const [selectedClientId, setSelectedClientId] = useState();
+  const [selectedPhase, setSelectedPhase] = useState('general');
   const effectiveClientId = selectedClientId || currentUser?.clientId || (canViewAllClients ? allClients[0]?.id : undefined);
   const { data: client } = useClientDoc(effectiveClientId);
   const { data: matches = [], isLoading: matchesLoading } = useMatches();
@@ -27,6 +53,7 @@ export default function Ranking() {
     for (const pred of predictions) {
       const match = matches.find(m => m.id === pred.matchId);
       if (!match || !match.result || match.result.homeScore === null) continue;
+      if (!matchInPhase(match, selectedPhase)) continue;
       const points = calculatePoints(pred, match.result);
       if (!calculatedPoints[pred.userId]) calculatedPoints[pred.userId] = 0;
       calculatedPoints[pred.userId] += points;
@@ -35,7 +62,7 @@ export default function Ranking() {
     const withPoints = enabled.map(u => ({ ...u, points: calculatedPoints[u.id] || 0 }));
     withPoints.sort((a, b) => b.points - a.points);
     return withPoints.map((u, i) => ({ ...u, rank: i + 1 }));
-  }, [usersData, predictions, matches, userControlEnabled]);
+  }, [usersData, predictions, matches, userControlEnabled, selectedPhase]);
 
   function getMedal(rank) {
     if (rank === 1) return { icon: Crown, color: 'text-yellow-400', bg: 'bg-yellow-400', label: 'Oro' };
@@ -84,6 +111,19 @@ export default function Ranking() {
             </select>
           </div>
         )}
+        <div className="relative">
+          <select
+            value={selectedPhase}
+            onChange={(e) => setSelectedPhase(e.target.value)}
+            className="pl-3 pr-4 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+          >
+            {PHASES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Podium for top 3 */}
