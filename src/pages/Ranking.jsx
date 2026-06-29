@@ -46,6 +46,16 @@ export default function Ranking() {
   const userControlEnabled = client?.enableUserControl === true;
   const loading = matchesLoading || usersLoading || predsLoading || !effectiveClientId;
 
+  console.log({
+    matches: matches.length,
+    users: usersData.length,
+    predictions: predictions.length,
+    effectiveClientId,
+    selectedPhase,
+  });
+  console.log('predictions sample:', predictions.slice(0, 2));
+  console.log('matches sample:', matches.slice(0, 2));
+
   const users = useMemo(() => {
     const enabled = usersData.filter(u => !userControlEnabled || u.enabled !== false);
 

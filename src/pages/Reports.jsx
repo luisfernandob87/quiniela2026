@@ -6,11 +6,37 @@ import { Crosshair, Goal, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { calculatePoints } from '../utils/scoring';
 
+const PHASES = [
+  { id: 'general', label: 'General' },
+  { id: 'grupos', label: 'Fase de Grupos' },
+  { id: 'dieciseisavos', label: 'Dieciseisavos' },
+  { id: 'octavos', label: 'Octavos' },
+  { id: 'cuartos', label: 'Cuartos' },
+  { id: 'semifinales', label: 'Semifinales' },
+  { id: 'tercer_lugar', label: 'Tercer Lugar' },
+  { id: 'final', label: 'Final' },
+];
+
+function matchInPhase(match, phaseId) {
+  if (phaseId === 'general') return true;
+  if (phaseId === 'grupos') return match.group?.startsWith('Grupo');
+  const phaseMap = {
+    dieciseisavos: 'Dieciseisavos de Final',
+    octavos: 'Octavos de Final',
+    cuartos: 'Cuartos de Final',
+    semifinales: 'Semifinales',
+    tercer_lugar: 'Tercer Lugar',
+    final: 'Final',
+  };
+  return match.group === phaseMap[phaseId];
+}
+
 export default function Reports() {
   const { currentUser } = useAuth();
   const canViewAllClients = currentUser?.isAdmin === true && !currentUser?.clientId;
   const { data: allClients = [] } = useClients();
   const [selectedClientId, setSelectedClientId] = useState();
+  const [selectedPhase, setSelectedPhase] = useState('general');
   const effectiveClientId = selectedClientId || currentUser?.clientId || (canViewAllClients ? allClients[0]?.id : undefined);
   const { data: client } = useClientDoc(effectiveClientId);
   const { data: matches = [], isLoading: matchesLoading } = useMatches();
@@ -28,6 +54,7 @@ export default function Reports() {
     for (const pred of predictions) {
       const match = matches.find(m => m.id === pred.matchId);
       if (!match || !match.result || match.result.homeScore === null) continue;
+      if (!matchInPhase(match, selectedPhase)) continue;
       const pts = calculatePoints(pred, match.result);
       if (pts === 3) {
         exactosMap[pred.userId] = (exactosMap[pred.userId] || 0) + 1;
@@ -47,7 +74,7 @@ export default function Reports() {
       exactos: buildRanking(exactosMap),
       ganadores: buildRanking(ganadoresMap),
     };
-  }, [predictions, matches, usersData]);
+  }, [predictions, matches, usersData, userControlEnabled, selectedPhase]);
 
   const currentUserId = currentUser?.uid;
 
@@ -86,6 +113,19 @@ export default function Reports() {
             </select>
           </div>
         )}
+        <div className="relative">
+          <select
+            value={selectedPhase}
+            onChange={(e) => setSelectedPhase(e.target.value)}
+            className="pl-3 pr-4 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+          >
+            {PHASES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">

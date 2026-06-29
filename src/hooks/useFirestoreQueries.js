@@ -63,11 +63,11 @@ export function useUsersByClient(clientId) {
     queryKey: ['users', 'client', clientId],
     queryFn: async () => {
       const q = query(collection(db, 'users'), where('clientId', '==', clientId));
-      const snapshot = await cachedQuery(q);
+      const snapshot = await getDocs(q);
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     },
     enabled: !!clientId,
-    staleTime: Infinity,
+    staleTime: 30 * 1000,
     gcTime: 60 * 60 * 1000,
   });
 }
@@ -77,11 +77,11 @@ export function usePredictionsByClient(clientId) {
     queryKey: ['predictions', 'client', clientId],
     queryFn: async () => {
       const q = query(collection(db, 'predictions'), where('clientId', '==', clientId));
-      const snapshot = await cachedQuery(q);
+      const snapshot = await getDocs(q);
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     },
     enabled: !!clientId,
-    staleTime: Infinity,
+    staleTime: 30 * 1000,
     gcTime: 60 * 60 * 1000,
   });
 }
